@@ -17,15 +17,25 @@ Todos de BA Data (data.buenosaires.gob.ar), descargados el 2026-09-28 salvo que 
 
 | Dataset | Estado | Uso | Link |
 | Espacios culturales | Descargado y limpio | Oferta cultural (lat, lon, tipo) | https://data.buenosaires.gob.ar/dataset/espacios-culturales |
+
 | Ciclovias | Descargado y limpio | Variable de control | https://data.buenosaires.gob.ar/dataset/ciclovias |
+
 | Usuarios EcoBici 2024 | Descargado, limpio | Perfil (genero, edad). No tiene viajes | https://data.buenosaires.gob.ar/dataset/bicicletas-publicas |
+
 | Conteo de ciclistas 2013-2019 | Descargado | Contexto historico | https://data.buenosaires.gob.ar/dataset/conteo-ciclistas |
+
 | Estaciones de bicicletas publicas | Descargado | Ubicacion y capacidad de estaciones | https://data.buenosaires.gob.ar/dataset/estaciones-bicicletas-publicas |
+
 | Recorridos realizados 2024 (zip) | FALTA (critico - error 504) | Viajes por estacion, fecha, hora, duracion | https://data.buenosaires.gob.ar/dataset/bicicletas-publicas |
+
 | Ferias y mercados | Opcional | Feria de artesanos como oferta cultural | https://data.buenosaires.gob.ar/dataset/ferias-mercados |
+
 | Bicicleteros en via publica | Opcional | Donde dejar la bici cerca de cada espacio | https://data.buenosaires.gob.ar/dataset/bicicleteros-via-publica |
+
 | EcoBici tiempo real (GBFS) | Opcional (V2) | Disponibilidad de bicis en la app | https://data.buenosaires.gob.ar/dataset/api-transporte-publico |
+
 | Feriados y clima | FALTA | Calendario y clima por dia | por definir |
+
 
 ## Como reproducir
 1. Descargar los archivos pendientes en datasets/ (si pesan mas de 50 MB, no subirlos: anotar aca link y fecha de descarga).
