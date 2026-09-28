@@ -214,5 +214,20 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Claves de API (nunca subir)
+.env
+.env.*
+*.env
+
+# Archivos pesados (GitHub no acepta más de 100 MB)
+datasets/recorridos_realizados_*.csv
+datasets/recorridos_realizados_*.zip
+*.zip
+
+# Netlify y dependencias
+node_modules/
+.netlify/
+.DS_Store
+
 # Streamlit
 .streamlit/secrets.toml
