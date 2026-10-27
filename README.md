@@ -58,3 +58,15 @@ Las decisiones del proyecto, con fecha, están en [`decisiones.md`](decisiones.m
 ## Seguridad
 
 Las claves de API (Groq u otras) van como variables de entorno en Netlify. Nunca en el repo.
+
+## El tech stack por capa:
+• Diseño: Figma y FigJam, para el flujo y las pantallas.
+• Datos: datasets abiertos de Buenos Aires Data en CSV y Excel, limpiados con scripts de Python (codigo/). Los procesados están en datasets_procesados/.
+• Frontend (la app): HTML, CSS y JavaScript en la carpeta app/.
+• Mapa: MapLibre + OpenFreeMap (recomendado, falta confirmarlo en equipo).
+• Clima: Open-Meteo (recomendado).
+• IA en tiempo real: Groq, un modelo de lenguaje que arma la propuesta de recorrido ✓.
+• Backend: una Netlify Function (chat.js) que guarda la clave y llama a Groq ✓.
+• Hosting: Netlify, que publica app/ con un link y se actualiza con cada push ✓.
+• Control de versiones: Git + GitHub, en el repo de Nico ✓.
+• Herramientas de desarrollo: VS Code, Claude Code y la terminal (PowerShell) ✓.
