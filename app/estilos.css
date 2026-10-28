@@ -1,0 +1,163 @@
+/* Pedalito · estilos tomados de Figma "Mobile 2.0" (390 × 844) */
+:root {
+  --fondo: #f6f6f1;
+  --tinta: #0e0f12;
+  --gris: #5f625f;        /* un poco más oscuro que el #6b6e6b de Figma, por contraste */
+  --celeste: #abd6ff;
+  --violeta: #7d5eff;
+  --azul: #0a6cff;
+  --blanco: #ffffff;
+  --radio: 18px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--tinta);
+  background: #1e1f22;          /* en escritorio, el "lienzo" oscuro como en Figma */
+}
+.app {
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--fondo);
+  position: relative;
+  padding-bottom: 96px;
+}
+@media (min-width: 600px) {
+  .app { margin: 24px auto; min-height: calc(100vh - 48px); border-radius: 28px; overflow: hidden; }
+}
+
+.pantalla { display: none; padding: 20px 21px 24px; }
+.pantalla.visible { display: block; }
+.logo { display: block; margin: 12px 0 10px 2px; }
+
+h1 { font-size: 29px; line-height: .98; letter-spacing: -.58px; margin: 8px 0 10px; }
+h2 { font-size: 20px; margin: 28px 0 12px; }
+.sub { color: var(--gris); font-size: 13px; margin: 0 0 18px; }
+.nota { color: var(--gris); font-size: 12px; margin: 6px 0; }
+.rotulo { font-size: 10px; font-weight: 700; color: var(--gris); letter-spacing: .3px; margin: 22px 0 8px; }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  min-height: 44px; padding: 0 14px; border-radius: 22px;
+  border: 1px solid var(--tinta); background: var(--blanco);
+  font: 500 12px "Inter", sans-serif; color: var(--tinta); cursor: pointer;
+}
+.etiqueta-chip { display: inline-grid; place-items: center; cursor: default; }
+.chip.activo { background: var(--tinta); color: var(--celeste); font-weight: 600; }
+
+/* Botón principal */
+.cta {
+  width: 100%; height: 52px; margin-top: 28px; padding: 0 20px;
+  display: flex; justify-content: space-between; align-items: center;
+  border: 0; border-radius: var(--radio); background: var(--tinta); color: var(--blanco);
+  font: 600 14px "Inter", sans-serif; cursor: pointer;
+}
+.cta span { color: var(--celeste); font-size: 18px; font-weight: 700; }
+.cta:disabled { opacity: .45; cursor: not-allowed; }
+
+.aviso { background: var(--celeste); border-radius: var(--radio); padding: 18px 16px; font-size: 12px; font-weight: 500; }
+
+/* Home */
+.fila { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { background: var(--blanco); border-radius: 19px; padding: 11px 14px; font-size: 11px; font-weight: 500; }
+.plan-rapido {
+  display: block; margin-top: 16px; padding: 22px 20px; border-radius: 24px;
+  background: var(--tinta); color: var(--blanco); text-decoration: none;
+}
+.plan-rapido .etiqueta { color: var(--celeste); font-size: 10px; font-weight: 700; }
+.plan-rapido strong { display: block; font-size: 25px; margin: 18px 0 22px; line-height: 1.2; }
+.plan-rapido .link { color: var(--celeste); font-size: 13px; font-weight: 600; }
+
+.carrusel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.tarjeta-lugar {
+  flex: 0 0 164px; background: var(--blanco); border-radius: 20px; padding: 8px 8px 14px;
+  text-decoration: none; color: inherit;
+}
+.tarjeta-lugar .foto-wrap { position: relative; }
+.tarjeta-lugar .foto { height: 92px; border-radius: 15px; overflow: hidden; }
+.tarjeta-lugar .tag {
+  position: absolute; top: 6px; left: 5px; background: var(--celeste);
+  border-radius: 12px; padding: 6px 10px; font-size: 8px; font-weight: 700;
+}
+.tarjeta-lugar strong { display: block; font-size: 15px; font-weight: 600; margin: 12px 6px 6px; }
+.tarjeta-lugar span.meta { font-size: 11px; color: var(--gris); margin: 0 6px; }
+
+.foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto.sin-imagen { display: grid; place-items: center; background: #e4e8ec; color: var(--gris); font-size: 11px; font-weight: 600; text-align: center; padding: 6px; }
+
+/* Explorar */
+.buscador {
+  width: 100%; height: 48px; border: 0; border-radius: var(--radio); background: var(--blanco);
+  padding: 0 17px; font: 400 13px "Inter", sans-serif; margin-bottom: 16px;
+}
+.lista { display: grid; gap: 16px; }
+.fila-lugar {
+  display: flex; gap: 16px; background: var(--blanco); border-radius: var(--radio); padding: 8px;
+  text-decoration: none; color: inherit;
+}
+.fila-lugar .foto { flex: 0 0 104px; height: 103px; border-radius: 14px; overflow: hidden; }
+.fila-lugar strong { display: block; font-size: 14px; font-weight: 600; margin: 9px 0 6px; }
+.fila-lugar .meta { font-size: 11px; color: var(--gris); }
+.fila-lugar .ver { display: block; font-size: 11px; font-weight: 600; margin-top: 14px; }
+
+/* Detalle */
+.detalle { padding: 0; }
+.hero { position: relative; height: 330px; background: #dfe5e8 center/cover no-repeat; }
+.hero.sin-imagen { height: 140px; }
+.volver {
+  position: absolute; top: 40px; left: 16px; width: 42px; height: 42px; border-radius: 21px;
+  background: var(--blanco); display: grid; place-items: center; color: var(--tinta);
+  text-decoration: none; font-size: 20px; font-weight: 700;
+}
+.cuerpo { padding: 22px 21px; }
+.categoria, .etiqueta-violeta { color: var(--violeta); font-size: 10px; font-weight: 700; margin: 0 0 10px; }
+.detalle h1 { font-size: 30px; }
+
+.tarjeta { background: var(--blanco); border-radius: var(--radio); padding: 18px; margin-top: 16px; }
+.tarjeta strong { font-size: 13px; }
+.tarjeta .grande { display: block; font-size: 20px; line-height: 1.3; margin-bottom: 14px; }
+.destino { background: var(--celeste); border-radius: var(--radio); padding: 14px 12px; font-size: 12px; font-weight: 600; }
+
+/* Planificar */
+.campo { background: var(--blanco); border-radius: var(--radio); padding: 17px 20px; font-size: 13px; font-weight: 500; }
+.campo.distancia strong { font-size: 17px; margin-right: 12px; }
+.campo.distancia span { color: var(--gris); font-size: 11px; }
+.modos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modo {
+  text-align: left; background: var(--blanco); border: 2px solid transparent; border-radius: var(--radio);
+  padding: 16px; font-family: "Inter", sans-serif; color: var(--tinta); cursor: pointer;
+}
+.modo strong { display: block; font-size: 16px; margin-bottom: 6px; }
+.modo span { font-size: 11px; color: var(--gris); }
+.modo.activo { border-color: var(--tinta); }
+
+/* Recorrido */
+.mapa { height: 300px; border-radius: var(--radio); overflow: hidden; background: #e8ecee; }
+.propuesta { border: 2px solid var(--violeta); }
+#propuesta-texto { font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.cargando { color: var(--gris); }
+
+/* Perfil */
+.km { background: var(--tinta); color: var(--blanco); border-radius: 24px; padding: 18px 20px 22px; }
+.km .etiqueta { color: var(--celeste); font-size: 8px; font-weight: 700; display: block; }
+.km strong { display: block; font-size: 40px; margin: 14px 0 6px; }
+.km span { font-size: 12px; }
+.fila-dato { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 14px 16px; }
+.link-texto { color: var(--tinta); font-size: 13px; font-weight: 600; }
+
+/* Barra de navegación */
+.barra {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  width: min(362px, calc(100% - 26px)); height: 55px; padding: 10px 8px;
+  background: var(--tinta); border-radius: 18px; display: flex; justify-content: space-between;
+}
+.barra a {
+  flex: 1; display: grid; place-items: center; border-radius: 17.5px;
+  color: var(--blanco); text-decoration: none; font-size: 11px; font-weight: 500;
+}
+.barra a.activo { background: var(--celeste); color: var(--tinta); }
+.barra.oculta { display: none; }

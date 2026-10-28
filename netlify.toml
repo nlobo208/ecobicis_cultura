@@ -1,0 +1,4 @@
+# Configuración de Netlify para Pedalito
+[build]
+  publish = "app"                  # carpeta que se publica como sitio
+  functions = "netlify/functions"  # funciones que corren en el servidor (Groq)

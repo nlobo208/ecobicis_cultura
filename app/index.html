@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pedalito · Cultura en EcoBici</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- 02 · Intereses -->
+  <section class="pantalla" id="intereses">
+    <img class="logo" src="img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <h1>¿Qué te mueve?</h1>
+    <p class="sub">Elegí de 3 a 5 intereses. Los podés cambiar después.</p>
+    <div class="chips" id="chips-intereses"></div>
+    <div class="aviso">Tu selección mejora “Para vos” y los recorridos sugeridos.</div>
+    <button class="cta" id="guardar-intereses" disabled>Guardar intereses <span>→</span></button>
+  </section>
+
+  <!-- 03 · Home -->
+  <section class="pantalla" id="inicio">
+    <img class="logo" src="img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <h1 id="saludo">Buen día</h1>
+    <p class="sub">¿Qué pinta hoy?</p>
+    <div class="fila">
+      <div class="pill">⌖ <span class="origen-nombre">Plaza Vicente López</span></div>
+      <div class="pill clima" id="clima-inicio">Clima…</div>
+    </div>
+    <a class="plan-rapido" href="#planificar">
+      <span class="etiqueta">PLAN RÁPIDO</span>
+      <strong>Una salida cultural<br>a menos de 5 km.</strong>
+      <span class="link">Armar recorrido →</span>
+    </a>
+    <h2>Para vos</h2>
+    <div class="carrusel" id="para-vos"></div>
+    <h2>Tendencias</h2>
+    <p class="nota">Próximamente: los lugares más elegidos esta semana en Pedalito.</p>
+  </section>
+
+  <!-- 04 · Explorar -->
+  <section class="pantalla" id="explorar">
+    <img class="logo" src="img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <h1>Explorar</h1>
+    <p class="sub">Encontrá algo cerca.</p>
+    <input class="buscador" id="buscador" type="search" placeholder="⌕  Museo, café, teatro…">
+    <div class="chips" id="filtros">
+      <button class="chip activo" data-filtro="cerca">Más cerca</button>
+      <button class="chip" data-filtro="intereses">Mis intereses</button>
+      <button class="chip" data-filtro="todos">Todos</button>
+    </div>
+    <p class="nota" id="cantidad"></p>
+    <div class="lista" id="lista-lugares"></div>
+  </section>
+
+  <!-- 11 · Detalle lugar -->
+  <section class="pantalla detalle" id="lugar">
+    <div class="hero" id="detalle-hero"><a class="volver" href="#explorar" aria-label="Volver">←</a></div>
+    <div class="cuerpo">
+      <p class="categoria" id="detalle-categoria"></p>
+      <h1 id="detalle-nombre"></h1>
+      <p class="sub" id="detalle-meta"></p>
+      <div class="tarjeta">
+        <strong id="detalle-horario"></strong>
+        <p class="nota" id="detalle-fuente"></p>
+      </div>
+      <button class="cta" id="detalle-sumar">Sumar al recorrido <span>→</span></button>
+    </div>
+  </section>
+
+  <!-- 05 · Planificar -->
+  <section class="pantalla" id="planificar">
+    <img class="logo" src="img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <h1>Armá tu salida</h1>
+    <p class="sub">Elegí un destino o dejá que Pedalito te sorprenda.</p>
+    <p class="rotulo">DESDE</p>
+    <div class="campo">⌖ <span class="origen-nombre">Plaza Vicente López</span></div>
+    <p class="rotulo">MODO</p>
+    <div class="modos">
+      <button class="modo activo" data-modo="sorpresa"><strong>Sin destino</strong><span>Sorprendeme según mis intereses</span></button>
+      <button class="modo" data-modo="destino"><strong>Con destino</strong><span id="destino-elegido">Elegí un lugar en Explorar</span></button>
+    </div>
+    <p class="rotulo">TIEMPO DISPONIBLE</p>
+    <div class="chips" id="tiempos">
+      <button class="chip" data-min="30">30 min</button>
+      <button class="chip activo" data-min="60">1 hora</button>
+      <button class="chip" data-min="120">2 horas</button>
+    </div>
+    <p class="rotulo">DISTANCIA MÁXIMA</p>
+    <div class="campo distancia"><strong>Hasta 5 km</strong><span>— cómoda en bici</span></div>
+    <button class="cta" id="buscar-recorrido">Buscar recorrido <span>→</span></button>
+  </section>
+
+  <!-- 06 · Recorrido -->
+  <section class="pantalla" id="recorrido">
+    <img class="logo" src="img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <h1>Tu recorrido en EcoBici</h1>
+    <p class="sub" id="recorrido-resumen">Armando tu propuesta…</p>
+    <div id="mapa" class="mapa"></div>
+    <p class="nota">Trazado aproximado en línea recta entre estaciones y lugares.</p>
+    <div class="tarjeta propuesta">
+      <p class="etiqueta-violeta">PROPUESTA DE PEDALITO</p>
+      <div id="propuesta-texto" class="cargando">Pensando tu recorrido…</div>
+      <p class="nota" id="propuesta-origen"></p>
+    </div>
+    <div class="tarjeta">
+      <p class="etiqueta-violeta">RETIRO DE BICI</p>
+      <strong class="grande">Estación EcoBici · <span class="origen-nombre">Plaza Vicente López</span></strong>
+      <div class="destino" id="recorrido-destino"></div>
+    </div>
+    <button class="cta" id="terminar">Terminé el recorrido <span>→</span></button>
+  </section>
+
+  <!-- 09 · Perfil -->
+  <section class="pantalla" id="perfil">
+    <img class="logo" src="img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <h1>Tu perfil</h1>
+    <p class="sub">Tus kilómetros cuentan tu ciudad.</p>
+    <div class="km">
+      <span class="etiqueta">KM RECORRIDOS</span>
+      <strong id="km-total">0</strong>
+      <span>kilómetros</span>
+    </div>
+    <p class="rotulo">ACTIVIDAD</p>
+    <div class="campo fila-dato"><span>Salidas</span><strong id="salidas">0</strong></div>
+    <div class="campo fila-dato"><span>Lugares visitados</span><strong id="visitados">0</strong></div>
+    <h2>Tus intereses</h2>
+    <div class="chips" id="mis-intereses"></div>
+    <a class="link-texto" href="#intereses">Editar intereses →</a>
+  </section>
+
+  <nav class="barra" id="barra">
+    <a href="#inicio" data-tab="inicio">⌂ Inicio</a>
+    <a href="#explorar" data-tab="explorar">⌕ Explorar</a>
+    <a href="#planificar" data-tab="planificar">↗ Pedalear</a>
+    <a href="#perfil" data-tab="perfil">◉ Perfil</a>
+  </nav>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="data/lugares.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
