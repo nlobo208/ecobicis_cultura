@@ -231,3 +231,8 @@ node_modules/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Prototipo final: env.js se genera desde .env y contiene las claves
+prototipo_final/env.js
+!.env.example
+!prototipo_final/.env.example

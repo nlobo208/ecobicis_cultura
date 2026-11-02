@@ -1,0 +1,228 @@
+/* Pedalito · estilos del prototipo final (Figma: UX_pedalito2, 390 × 844)
+   Tokens tomados de los estilos de Figma "Pedalito/…". Mobile primero; en pantallas anchas la app
+   queda como una columna centrada. */
+
+:root {
+  --noche: #092957;        /* Pedalito/01 Azul noche */
+  --crema: #fffcfa;        /* Pedalito/02 Crema */
+  --rosa: #f90083;         /* Pedalito/03 Rosa */
+  --naranja: #f76c09;      /* Pedalito/05 Naranja */
+  --verde: #38ea59;        /* Pedalito/07 Verde */
+  --celeste: #00baf1;      /* Pedalito/08 Celeste */
+  --azul: #203ae9;         /* Pedalito/09 Azul */
+  --texto-suave: rgba(9, 41, 87, .68);  /* En Figma es 30 %: no llega a contraste AA, se subió */
+  --borde: rgba(9, 41, 87, .15);
+  --radio-pantalla: 36px;
+  --gutter: 22px;
+  --nav-alto: 64px;
+
+  /* Degradado multicolor de botones, chips y cajas (aproximación CSS de los 16 puntos del mesh de Figma) */
+  --mesh:
+    radial-gradient(60% 55% at 0% 0%, #0053e2 0%, transparent 70%),
+    radial-gradient(55% 55% at 0% 33%, #092957 0%, transparent 75%),
+    radial-gradient(60% 60% at 67% 33%, #097df2 0%, transparent 70%),
+    radial-gradient(45% 50% at 100% 33%, #80b359 0%, transparent 70%),
+    radial-gradient(50% 50% at 33% 67%, #01d9d9 0%, transparent 70%),
+    radial-gradient(50% 45% at 67% 70%, #f7900a 0%, transparent 70%),
+    radial-gradient(45% 45% at 33% 100%, #f7900a 0%, transparent 70%),
+    radial-gradient(45% 45% at 0% 100%, #05d6a1 0%, transparent 70%),
+    radial-gradient(50% 50% at 100% 100%, #0a53ff 0%, transparent 70%),
+    linear-gradient(135deg, #165cd3, #1a99b3);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #e9ecf1; color: var(--noche);
+  font: 400 15px/1.3 "Inter", system-ui, sans-serif;
+}
+h1 { margin: 0; font-size: 32px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; }
+h2 { margin: 18px 0 8px; font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+
+/* ---------- Estructura ---------- */
+.app {
+  position: relative; max-width: 430px; min-height: 100dvh; margin: 0 auto;
+  background: var(--crema); overflow-x: clip;
+}
+@media (min-width: 700px) {
+  .app { box-shadow: 0 0 40px rgba(9, 41, 87, .14); }
+}
+.pantalla { display: none; min-height: 100%; padding: 64px var(--gutter) 140px; position: relative; }
+.pantalla.visible { display: block; }
+.pantalla.centrada { text-align: left; }
+.logo { display: block; margin-bottom: 18px; }
+.contenido { display: flex; flex-direction: column; gap: 14px; }
+.contenido.bajo { padding-top: 70px; }
+.sub { color: var(--texto-suave); font-weight: 600; }
+.nota { color: var(--texto-suave); font-size: 12px; font-weight: 600; }
+.texto { font-size: 15px; }
+.etiqueta { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.error { color: #b00020; font-weight: 600; font-size: 13px; }
+
+/* ---------- Botones ---------- */
+.boton {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  width: 100%; height: 56px; padding: 0 22px 0 24px; border: 0; border-radius: 18px; cursor: pointer;
+  color: var(--crema); font: 600 15px/1.3 "Inter", system-ui, sans-serif; text-decoration: none;
+  background: var(--mesh); isolation: isolate;
+}
+.boton::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.boton span { font-weight: 700; font-size: 18px; }
+.boton:disabled { opacity: .45; cursor: not-allowed; }
+.boton.contorno { background: transparent; color: var(--noche); border: 2px solid var(--azul); }
+.boton.contorno::after { display: none; }
+.boton.info { cursor: default; }
+.boton.chico { width: auto; margin: 10px auto 0; justify-content: center; padding: 0 28px; height: 48px; letter-spacing: .12em; }
+/* Botones y barra pegados abajo: columna de 430 px centrada, igual que .app */
+.boton.fijo, .botones-fijos, .nav {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  width: calc(min(100vw, 430px) - 2 * var(--gutter)); z-index: 5;
+}
+.botones-fijos { display: flex; flex-direction: column; gap: 12px; }
+.con-nav .boton.fijo, .con-nav .botones-fijos { bottom: calc(var(--nav-alto) + 34px); }
+.boton.fijo[hidden] { display: none; }
+
+/* ---------- Campos y chips ---------- */
+.campo-texto { display: flex; flex-direction: column; gap: 8px; font-weight: 600; }
+.campo-texto input {
+  height: 52px; padding: 0 18px; border: 2px solid var(--azul); border-radius: 16px; background: #fff;
+  font: 600 14px "Inter", system-ui, sans-serif; color: var(--noche);
+}
+.campo-texto input::placeholder { color: var(--texto-suave); }
+.chips { display: flex; flex-wrap: wrap; gap: 10px 8px; }
+.chip {
+  position: relative; min-height: 44px; padding: 10px 18px; border: 2px solid var(--azul); border-radius: 999px;
+  background: transparent; color: var(--noche); font: 600 15px/1.3 "Inter", system-ui, sans-serif; cursor: pointer; isolation: isolate;
+}
+.chip.activo { border-color: transparent; color: var(--crema); background: var(--mesh); }
+.chip.activo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.fila-opcion {
+  position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; height: 56px;
+  padding: 0 22px 0 24px; margin-top: 8px; border: 2px solid var(--azul); border-radius: 18px; background: transparent;
+  color: var(--noche); font: 600 15px "Inter", system-ui, sans-serif; text-align: left; cursor: pointer; isolation: isolate;
+}
+.fila-opcion span:last-child { font-weight: 700; font-size: 18px; color: var(--azul); }
+.fila-opcion.activo { border-color: transparent; color: var(--crema); background: var(--mesh); }
+.fila-opcion.activo span:last-child { color: var(--crema); }
+.fila-opcion.activo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.separador { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--texto-suave); }
+.separador::before, .separador::after { content: ""; flex: 1; height: 1px; background: #d1d4d6; }
+.pie { margin-top: 26px; text-align: center; color: var(--texto-suave); font-size: 13px; }
+
+/* ---------- Cajas y tarjetas ---------- */
+.caja-info {
+  position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 150px; padding: 22px 24px;
+  border-radius: 28px; color: var(--crema); background: var(--mesh); isolation: isolate; justify-content: flex-end;
+}
+.caja-info::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.caja-info strong { font-size: 32px; line-height: 1.1; letter-spacing: -.02em; }
+.caja-info.grande { min-height: 230px; }
+.caja-info .mini {
+  align-self: flex-start; margin-top: 6px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 252, 250, .2);
+  color: var(--crema); font-weight: 700; font-size: 12px; text-decoration: none;
+}
+.apiladas { display: flex; flex-direction: column; padding-top: 6px; }
+.tarjeta-apilada {
+  display: flex; flex-direction: column; gap: 6px; min-height: 160px; margin-bottom: -70px; padding: 22px 24px;
+  border-radius: 28px; text-decoration: none; filter: drop-shadow(0 -6px 9px rgba(9, 41, 87, .18));
+  color: var(--noche); background: var(--celeste);
+}
+.tarjeta-apilada:last-child { margin-bottom: 0; }
+.tarjeta-apilada strong { font-size: 15px; line-height: 1.1; letter-spacing: -.01em; }
+.tarjeta-apilada span { font-size: 12px; font-weight: 600; opacity: .9; }
+.tarjeta-apilada.rosa { background: var(--rosa); color: var(--crema); }
+.tarjeta-apilada.noche { background: var(--noche); color: var(--crema); }
+.tarjeta-apilada.naranja { background: var(--naranja); }
+.tarjeta-apilada.verde { background: var(--verde); }
+
+/* ---------- Home ---------- */
+.pantalla.home { padding: 290px 0 0; }   /* padding y no margin: el margin del hijo colapsaría y bajaría toda la página */
+.mapa-home { position: absolute; inset: 0 0 auto 0; height: 380px; background: var(--noche); }
+.velo { position: absolute; inset: 0 0 auto 0; height: 300px; background: linear-gradient(rgba(9, 41, 87, 0), rgba(9, 41, 87, .35)); pointer-events: none; }
+.hoja { position: relative; padding: 26px 0 140px var(--gutter); background: var(--crema); border-radius: 22px 22px 0 0; min-height: 554px; }
+.saludo h1 { font-size: 32px; line-height: 1; }
+.saludo .sub { margin-top: 2px; }
+.clima { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.hoja h2 { font-size: 15px; margin: 18px 0 10px; }
+.carrusel { display: flex; gap: 12px; overflow-x: auto; padding: 0 var(--gutter) 6px 0; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.carrusel::-webkit-scrollbar { display: none; }
+.tarjeta-lugar {
+  flex: 0 0 170px; scroll-snap-align: start; display: block; text-decoration: none; overflow: hidden;
+  border: 1px solid var(--borde); border-radius: 22px; background: var(--crema);
+}
+.tarjeta-lugar .foto { position: relative; height: 108px; padding: 10px; background: var(--noche) center / cover; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; }
+.tarjeta-lugar .foto.sin-imagen { background: var(--mesh); color: var(--crema); font-weight: 700; font-size: 12px; }
+.tarjeta-apilada .ver { font-weight: 700; opacity: 1; }
+.tag { display: inline-block; padding: 5px 10px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.tag.azul { background: var(--azul); }
+.tag.naranja { background: var(--naranja); color: var(--noche); }
+.tarjeta-lugar .info { display: flex; flex-direction: column; gap: 3px; padding: 10px 14px 14px; }
+.tarjeta-lugar strong { font-size: 15px; line-height: 1.3; }
+.tarjeta-lugar .meta { font-size: 12px; opacity: .72; }
+.tendencias { list-style: none; margin: 0; padding: 0 var(--gutter) 0 0; display: flex; flex-direction: column; gap: 8px; }
+.tendencias li a {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--borde); border-radius: 18px;
+  text-decoration: none; background: var(--crema);
+}
+.tendencias .puesto { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--noche); color: var(--crema); font-weight: 700; font-size: 13px; }
+.tendencias .cuantos { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--azul); }
+.tendencias .vacio { padding: 12px 0; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+
+/* ---------- Bienvenida ---------- */
+.hero-bienvenida { height: 340px; margin-bottom: 18px; border-radius: 28px; background: var(--mesh); }
+.pantalla.centrada .boton { margin-top: 26px; }
+.pantalla.centrada .sub { margin-top: 12px; }
+
+/* ---------- Mapa y recorrido ---------- */
+.mapa { height: 300px; border-radius: 28px; overflow: hidden; background: #edf0f2; }
+.pin { width: 30px; height: 30px; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; color: var(--crema); font-weight: 700; font-size: 14px; }
+.estacion-prediccion { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 600; }
+.nivel-alta { color: #0b7a2a; } .nivel-media { color: #9a5b00; } .nivel-baja { color: #b00020; }
+
+/* ---------- Llegada: foto con la caja de km encima ---------- */
+.foto-caja .foto { height: 260px; border-radius: 28px; background: var(--mesh) center / cover; }
+.foto-caja .caja-info { margin-top: -40px; }
+
+/* ---------- Detalle ---------- */
+.pantalla.detalle { padding: 0 0 140px; }
+.hero { position: relative; height: 360px; background: var(--mesh) center / cover; }
+.redondo { position: absolute; top: 52px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 252, 250, .92); color: var(--noche); font-size: 18px; text-decoration: none; cursor: pointer; }
+.redondo.izq { left: var(--gutter); } .redondo.der { right: var(--gutter); }
+.ficha { position: relative; margin-top: -40px; padding: 26px var(--gutter) 0; border-radius: 28px 28px 0 0; background: var(--crema); display: flex; flex-direction: column; gap: 14px; }
+.etiqueta-rosa { align-self: flex-start; padding: 4px 12px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+/* ---------- Rueda GIRA ---------- */
+.rueda-wrap { display: flex; flex-direction: column; align-items: center; margin: 14px 0 6px; }
+.rueda { width: 168px; height: 168px; border-radius: 50%; cursor: pointer; will-change: transform; touch-action: manipulation; }
+.rueda svg { width: 100%; height: 100%; display: block; }
+.rueda .llanta { fill: none; stroke: var(--noche); stroke-width: 10; }
+.rueda .aro { fill: none; stroke: var(--azul); stroke-width: 2; }
+.rueda .rayos line { stroke: var(--rosa); stroke-width: 2; stroke-linecap: round; }
+.rueda .buje { fill: var(--noche); }
+.mensaje-dia { margin-top: 14px; padding: 14px 18px; border: 2px solid var(--azul); border-radius: 18px; text-align: center; animation: aparece .5s ease both; }
+.mensaje-dia[hidden] { display: none; }
+.mensaje-dia .etiqueta { display: block; margin-bottom: 4px; color: var(--azul); }
+.mensaje-dia p:last-child { font-weight: 600; }
+@keyframes aparece { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mensaje-dia { animation: none; } }
+
+/* ---------- Estrellas ---------- */
+.calificacion { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 14px 20px; border: 2px solid var(--azul); border-radius: 18px; font-weight: 600; }
+.estrellas { display: flex; gap: 2px; }
+.estrellas button { min-width: 32px; min-height: 32px; border: 0; background: transparent; font-size: 22px; line-height: 1; color: var(--azul); cursor: pointer; }
+
+/* ---------- Barra inferior ---------- */
+.nav {
+  display: none; align-items: center; justify-content: space-between; gap: 4px;
+  height: var(--nav-alto); padding: 0 8px; border-radius: 28px; background: var(--noche); color: var(--crema);
+}
+.nav.visible { display: flex; }
+.nav a { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 10px 14px; border-radius: 999px; color: inherit; text-decoration: none; font-size: 12px; font-weight: 600; }
+.nav a i { font-style: normal; font-weight: 700; font-size: 15px; }
+.nav a span { display: none; }
+.nav a.activo { background: var(--mesh); position: relative; isolation: isolate; }
+.nav a.activo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.nav a.activo span { display: inline; }

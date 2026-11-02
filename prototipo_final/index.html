@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pedalito · Cultura en EcoBici</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- 00 · Bienvenida (en Figma el frame está vacío: contenido tomado de la versión anterior) -->
+  <section class="pantalla centrada" id="bienvenida">
+    <img class="logo" src="../app/img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <div class="hero-bienvenida" role="img" aria-label="Ciclistas cruzando una avenida de Buenos Aires"></div>
+    <h1>Salí a ver<br>la ciudad.</h1>
+    <p class="sub">Pedalito arma recorridos culturales según dónde estás, cuánto querés pedalear y qué te interesa.</p>
+    <a class="boton" href="#cuenta">Empezar <span aria-hidden="true">→</span></a>
+  </section>
+
+  <!-- 01 · Crear cuenta -->
+  <section class="pantalla" id="cuenta">
+    <img class="logo" src="../app/img/logo_pedalito.png" alt="Pedalito" width="104" height="28">
+    <div class="contenido bajo">
+      <h1>Empezá a pedalear</h1>
+      <p class="sub">Ingresá para guardar recorridos, kilómetros e intereses.</p>
+      <form id="form-cuenta" novalidate>
+        <label class="campo-texto">Email
+          <input id="email" type="email" placeholder="nombre@email.com" autocomplete="email">
+        </label>
+        <label class="campo-texto">Creá una contraseña
+          <input id="clave" type="password" placeholder="••••••••" autocomplete="new-password" minlength="8">
+        </label>
+        <p class="error" id="error-cuenta" role="alert" hidden></p>
+        <button class="boton" type="submit">Crear cuenta <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="separador"><span>o</span></p>
+      <button class="boton" id="google" type="button">Registrarme con Google</button>
+      <p class="pie"><a href="#intereses" id="ya-tengo">¿Ya tenés cuenta? Iniciar sesión</a></p>
+    </div>
+  </section>
+
+  <!-- 02 · Intereses -->
+  <section class="pantalla" id="intereses">
+    <div class="contenido bajo">
+      <h1>¿Qué te mueve?</h1>
+      <p class="sub">Elegí de 3 a 5 intereses. Los podés cambiar después.</p>
+      <div class="chips" id="chips-intereses"></div>
+      <p class="nota">Tu selección mejora “Para vos” y los recorridos sugeridos.</p>
+    </div>
+    <button class="boton fijo" id="guardar-intereses" disabled>Guardar intereses <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 03 · Home -->
+  <section class="pantalla home" id="inicio">
+    <div class="mapa-home" id="mapa-home" aria-label="Mapa de tu zona"></div>
+    <div class="velo"></div>
+    <div class="hoja">
+      <div class="saludo">
+        <h1 id="saludo">¡Buen día!</h1>
+        <p class="sub">¿Qué recorremos hoy?</p>
+        <p class="clima" id="clima">Clima…</p>
+      </div>
+
+      <h2>Últimas fechas disponibles</h2>
+      <div class="carrusel" id="fechas"></div>
+
+      <h2>Para vos</h2>
+      <div class="carrusel" id="para-vos"></div>
+      <p class="nota" id="para-vos-origen"></p>
+
+      <h2>Tendencias</h2>
+      <ol class="tendencias" id="tendencias"></ol>
+    </div>
+  </section>
+
+  <!-- 04 · Explorar -->
+  <section class="pantalla" id="explorar">
+    <div class="contenido">
+      <h1>Explorar</h1>
+      <p class="sub">Encontrá algo cerca.</p>
+      <label class="campo-texto">Buscar
+        <input id="buscador" type="search" placeholder="⌕ Museo, café, teatro…">
+      </label>
+      <div class="chips" id="filtros">
+        <button class="chip activo" data-filtro="cerca">Más cerca</button>
+        <button class="chip" data-filtro="intereses">Mis intereses</button>
+        <button class="chip" data-filtro="verificado">Horario verificado</button>
+      </div>
+      <h2 id="cantidad">0 lugares</h2>
+      <div class="apiladas" id="lista-lugares"></div>
+    </div>
+  </section>
+
+  <!-- 05 · Planificar -->
+  <section class="pantalla" id="planificar">
+    <div class="contenido">
+      <h1>Armá tu salida</h1>
+      <p class="sub">Elegí un destino cultural.</p>
+      <label class="campo-texto">Desde
+        <input id="origen" type="text" value="⌖ Plaza Vicente López" readonly>
+      </label>
+      <h2>Modo</h2>
+      <button class="fila-opcion activo" data-modo="sorpresa">◎ Sorprendeme con lugares cerca <span aria-hidden="true">→</span></button>
+      <button class="fila-opcion" data-modo="destino"><span id="destino-elegido">⌖ Buscar museo, café, teatro…</span> <span aria-hidden="true">+</span></button>
+      <h2>Tiempo disponible</h2>
+      <div class="chips" id="tiempos">
+        <button class="chip" data-min="30">30 min</button>
+        <button class="chip activo" data-min="60">1 hora</button>
+        <button class="chip" data-min="120">2 horas</button>
+      </div>
+      <h2>Distancia máxima</h2>
+      <div class="chips" id="distancias">
+        <button class="chip" data-km="3">Hasta 3 km</button>
+        <button class="chip activo" data-km="5">Hasta 5 km</button>
+        <button class="chip" data-km="8">Hasta 8 km</button>
+      </div>
+    </div>
+    <button class="boton fijo" id="buscar-recorrido">Buscar recorrido <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 06 · Recorrido -->
+  <section class="pantalla" id="recorrido">
+    <div class="contenido">
+      <h1>Tu recorrido en EcoBici</h1>
+      <p class="sub" id="recorrido-resumen">Armando tu propuesta…</p>
+      <div class="mapa" id="mapa" aria-label="Mapa del recorrido"></div>
+      <p class="nota" id="propuesta-texto"></p>
+      <div class="apiladas" id="paradas"></div>
+    </div>
+    <button class="boton fijo" id="iniciar">Ir a retirar la bici <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 07 · Llegada -->
+  <section class="pantalla" id="llegada">
+    <div class="contenido">
+      <h1>Llegaste a tu destino</h1>
+      <p class="sub" id="llegada-lugar"></p>
+      <div class="foto-caja">
+        <div class="foto" id="llegada-foto"></div>
+        <div class="caja-info">
+          <p class="etiqueta">Km recorridos</p>
+          <strong id="llegada-km">0 km</strong>
+          <span id="llegada-perfil"></span>
+        </div>
+      </div>
+    </div>
+    <div class="botones-fijos">
+      <button class="boton" id="ver-devolucion">Ver estación de devolución <span aria-hidden="true">→</span></button>
+      <p class="boton contorno info" id="anclajes" role="status">Próximo: calculando anclajes…</p>
+    </div>
+  </section>
+
+  <!-- 08 · Cierre -->
+  <section class="pantalla" id="cierre">
+    <div class="contenido">
+      <h1>Recorrido completado</h1>
+      <p class="sub">Bici devuelta correctamente. Guardamos tus kilómetros.</p>
+      <div class="caja-info">
+        <p class="etiqueta">Km recorridos hoy</p>
+        <strong id="cierre-km">0 km</strong>
+        <span id="cierre-lugares"></span>
+      </div>
+      <h2>¿Qué te parecieron?</h2>
+      <div id="calificar"></div>
+      <p class="nota">Tus ratings afinan futuras recomendaciones.</p>
+    </div>
+    <button class="boton fijo" id="guardar-volver">Guardar y volver <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 09 · Perfil -->
+  <section class="pantalla" id="perfil">
+    <div class="contenido">
+      <h1>Tu perfil</h1>
+      <p class="sub">Tus kilómetros cuentan tu ciudad.</p>
+      <div class="caja-info">
+        <p class="etiqueta">Km recorridos</p>
+        <strong id="km-total">0 km</strong>
+        <a class="mini" href="#compartir">Compartir ↗</a>
+      </div>
+      <h2>Actividad</h2>
+      <div class="apiladas" id="actividad"></div>
+      <h2>Tus intereses</h2>
+      <div class="chips" id="mis-intereses"></div>
+      <p class="nota"><a href="#intereses">Editar intereses →</a></p>
+    </div>
+  </section>
+
+  <!-- 10 · Compartir (con la rueda GIRA) -->
+  <section class="pantalla" id="compartir">
+    <div class="contenido">
+      <h1>Compartí tu salida</h1>
+      <p class="sub">Sin rankings. Solo tu recorrido.</p>
+      <div class="caja-info grande">
+        <p class="etiqueta">Pedalito / Hoy</p>
+        <strong id="compartir-km">0 KM</strong>
+        <span id="compartir-ruta"></span>
+      </div>
+
+      <div class="rueda-wrap">
+        <div class="rueda" id="rueda" role="button" tabindex="0" aria-label="Girar la rueda para ver el mensaje del día">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="100" r="94" class="llanta"/>
+            <circle cx="100" cy="100" r="82" class="aro"/>
+            <g class="rayos"></g>
+            <circle cx="100" cy="100" r="14" class="buje"/>
+          </svg>
+        </div>
+        <button class="boton chico" id="gira" type="button">GIRA</button>
+        <div class="mensaje-dia" id="salida-mensaje" hidden>
+          <p class="etiqueta">Mensaje del día</p>
+          <p id="mensaje-dia"></p>
+        </div>
+      </div>
+
+      <h2>¿Dónde querés compartirlo?</h2>
+      <button class="fila-opcion activo" data-red="instagram">Instagram Stories <span aria-hidden="true">→</span></button>
+      <button class="fila-opcion" data-red="whatsapp">WhatsApp <span aria-hidden="true">+</span></button>
+      <button class="fila-opcion" data-red="comunidad">Comunidad Pedalito <span aria-hidden="true">+</span></button>
+    </div>
+    <button class="boton fijo" id="compartir-ya">Compartir <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 11 · Detalle lugar -->
+  <section class="pantalla detalle" id="lugar">
+    <div class="hero" id="detalle-hero">
+      <a class="redondo izq" href="#explorar" aria-label="Volver">←</a>
+      <button class="redondo der" id="guardar-lugar" aria-label="Guardar lugar">♡</button>
+    </div>
+    <div class="ficha">
+      <span class="etiqueta-rosa" id="detalle-categoria"></span>
+      <h1 id="detalle-nombre"></h1>
+      <p class="sub" id="detalle-meta"></p>
+      <p class="texto" id="detalle-desc"></p>
+      <div class="caja-info">
+        <p class="etiqueta">Hoy</p>
+        <strong id="detalle-horario"></strong>
+        <span>Verificá horarios antes de salir</span>
+      </div>
+    </div>
+    <button class="boton fijo" id="detalle-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
+  </section>
+
+  <nav class="nav" id="nav" aria-label="Principal">
+    <a href="#inicio" data-tab="inicio"><i aria-hidden="true">⌂</i><span>Inicio</span></a>
+    <a href="#explorar" data-tab="explorar"><i aria-hidden="true">⌕</i><span>Explorar</span></a>
+    <a href="#planificar" data-tab="planificar"><i aria-hidden="true">↗</i><span>Pedalear</span></a>
+    <a href="#perfil" data-tab="perfil"><i aria-hidden="true">◉</i><span>Perfil</span></a>
+  </nav>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="env.js"></script>
+<script src="../app/data/lugares.js"></script>
+<script src="datos/insight_estaciones.js"></script>
+<script src="datos/actividades.js"></script>
+<script src="js/prediccion.js"></script>
+<script src="js/tendencias.js"></script>
+<script src="js/rueda.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
