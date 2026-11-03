@@ -1,0 +1,8 @@
+{
+  "name": "pedalito",
+  "private": true,
+  "description": "Pedalito: recorridos culturales en EcoBici. Las dependencias son solo para las funciones de Netlify.",
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0"
+  }
+}

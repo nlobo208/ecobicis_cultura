@@ -3,9 +3,15 @@
 
 const MODELO = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
-const INSTRUCCIONES = `Sos el asistente de Pedalito, una app de recorridos culturales en EcoBici
-por las comunas 1, 2, 4 y 14 de la Ciudad de Buenos Aires. Respondé en español rioplatense,
-en no más de 120 palabras. Si no sabés algo, decilo; no inventes lugares, horarios ni estaciones.`;
+const BASE = `Sos el asistente de Pedalito, una app de recorridos culturales en EcoBici
+por las comunas 1, 2, 4 y 14 de la Ciudad de Buenos Aires. Respondé en español rioplatense.
+Si no sabés algo, decilo; no inventes lugares, horarios, calles ni estaciones.`;
+// El límite de palabras es para respuestas de texto libre. Las respuestas JSON (recorrido, guía paso a paso)
+// pueden ser largas: ahí se respeta el formato que pide la app.
+const INSTRUCCIONES = {
+  texto: `${BASE} Respondé en no más de 120 palabras.`,
+  json: `${BASE} Respondé únicamente con el JSON pedido, sin texto antes ni después.`,
+};
 
 export default async (req) => {
   if (req.method !== "POST") {
@@ -36,7 +42,7 @@ export default async (req) => {
       // Con formato "json" Groq devuelve un objeto JSON válido (la app lo usa para elegir lugares)
       ...(formato === "json" && { response_format: { type: "json_object" } }),
       messages: [
-        { role: "system", content: INSTRUCCIONES },
+        { role: "system", content: INSTRUCCIONES[formato === "json" ? "json" : "texto"] },
         { role: "user", content: pregunta },
       ],
     }),

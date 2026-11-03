@@ -1,5 +1,5 @@
 // Pedalito · lógica de la app (sin frameworks)
-// Datos: data/lugares.js (30 lugares de ejemplo + estaciones EcoBici cercanas)
+// Datos: data/lugares.js (3.390 lugares de BA Data + 110 estaciones EcoBici), generado con codigo/generar_lugares_app.py
 
 const LUGARES = window.PEDALITO_LUGARES;
 const ESTACIONES = window.PEDALITO_ESTACIONES;
@@ -12,6 +12,7 @@ const INTERESES = ["Anfiteatro", "Bar", "Biblioteca", "Café", "Centro cultural"
 
 const LUGARES_POR_TIEMPO = { 30: 1, 60: 2, 120: 3 };
 const DISTANCIA_MAX_KM = 5;
+const MAX_LISTA = 50; // Explorar muestra los 50 más cercanos; el resto se encuentra con el buscador
 
 // ---------- Estado guardado en el navegador ----------
 const estado = Object.assign(
@@ -47,6 +48,15 @@ function foto(l) {
     : `<div class="foto sin-imagen">${l.categoria}</div>`;
 }
 
+// Etiquetas que separan lo calculado con los datos de lo que sugiere la IA
+const ETIQUETA_DATO = `<span class="badge calculado">Dato calculado</span>`;
+const ETIQUETA_IA = `<span class="badge ia">Sugerido por IA</span>`;
+
+function estadoHorario(l) {
+  if (!l.horario) return "horario sin dato";
+  return l.verificado ? "horario verificado" : "horario declarado en BA Data, sin verificar";
+}
+
 // ---------- Navegación por pantallas (#inicio, #explorar, #lugar/123…) ----------
 function mostrar() {
   let [pantalla, param] = location.hash.slice(1).split("/");
@@ -55,11 +65,12 @@ function mostrar() {
 
   document.querySelectorAll(".pantalla").forEach(s => s.classList.toggle("visible", s.id === pantalla));
   document.querySelectorAll(".barra a").forEach(a => a.classList.toggle("activo", a.dataset.tab === pantalla));
-  $("#barra").classList.toggle("oculta", pantalla === "intereses" || pantalla === "lugar");
+  $("#barra").classList.toggle("oculta", pantalla === "intereses" || pantalla === "lugar" || pantalla === "sobre");
   window.scrollTo(0, 0);
 
   ({ intereses: pintarIntereses, inicio: pintarInicio, explorar: pintarExplorar,
-     lugar: () => pintarLugar(param), planificar: pintarPlanificar, recorrido: armarRecorrido, perfil: pintarPerfil }[pantalla] || (() => {}))();
+     lugar: () => pintarLugar(param), planificar: pintarPlanificar, recorrido: armarRecorrido, perfil: pintarPerfil,
+     sobre: pintarSobre }[pantalla] || (() => {}))();
 }
 window.addEventListener("hashchange", mostrar);
 
@@ -97,7 +108,7 @@ function pintarInicio() {
       <div class="foto-wrap">${foto(l)}<span class="tag">CERCA TUYO</span></div>
       <strong>${l.nombre}</strong>
       <span class="meta">${km(desdeOrigen(l))} · ${l.barrio}</span>
-    </a>`).join("") : `<p class="nota">Todavía no hay lugares de ejemplo para tus intereses.</p>`;
+    </a>`).join("") : `<p class="nota">No hay lugares de tus intereses a menos de ${DISTANCIA_MAX_KM} km.</p>`;
 }
 
 // Clima actual en CABA (Open-Meteo: gratis y sin clave)
@@ -120,8 +131,8 @@ function pintarExplorar() {
   if (filtro === "intereses") lista = lista.filter(l => estado.intereses.includes(l.categoria));
   if (filtro === "cerca") lista = lista.filter(l => desdeOrigen(l) <= DISTANCIA_MAX_KM);
   lista.sort((a, b) => desdeOrigen(a) - desdeOrigen(b));
-  $("#cantidad").textContent = `${lista.length} lugares`;
-  $("#lista-lugares").innerHTML = lista.map(l => `
+  $("#cantidad").innerHTML = `${lista.length} lugares${lista.length > MAX_LISTA ? ` · mostrando los ${MAX_LISTA} más cercanos` : ""} ${ETIQUETA_DATO}`;
+  $("#lista-lugares").innerHTML = lista.slice(0, MAX_LISTA).map(l => `
     <a class="fila-lugar" href="#lugar/${l.id}">
       ${foto(l)}
       <div><strong>${l.nombre}</strong>
@@ -147,11 +158,13 @@ function pintarLugar(id) {
   $("#detalle-categoria").textContent = l.categoria.toUpperCase();
   $("#detalle-nombre").textContent = l.nombre;
   const est = estacion(l.estacion);
-  $("#detalle-meta").textContent = `${km(desdeOrigen(l))} · ${l.barrio} · EcoBici: ${est ? est.nombre : "—"}`;
-  $("#detalle-horario").textContent = l.horario ? `Horario · ${l.horario}` : "Horario sin confirmar";
+  $("#detalle-meta").textContent = `${l.direccion} · ${l.barrio}`;
+  $("#detalle-distancias").innerHTML = `${ETIQUETA_DATO}<br>${km(desdeOrigen(l))} desde ${ORIGEN.nombre} · ` +
+    `estación EcoBici más cercana: ${est ? est.nombre : "—"}, a ${l.dist_m} m`;
+  $("#detalle-horario").textContent = l.horario ? `Horario · ${l.horario}` : "Horario sin dato";
   $("#detalle-fuente").textContent = [
     l.cerrado ? `Cerrado: ${l.cerrado}.` : "",
-    l.fuente_horario ? `Fuente: ${l.fuente_horario}.` : "",
+    l.fuente_horario ? `Fuente: ${l.fuente_horario}.` : "No tenemos el horario de este lugar.",
     "Verificá horarios antes de salir."].join(" ");
   $("#detalle-sumar").onclick = () => {
     estado.destinoId = l.id; guardarEstado();
@@ -197,8 +210,9 @@ async function armarRecorrido() {
   const pregunta = `Armá un recorrido cultural en EcoBici saliendo de la estación ${ORIGEN.nombre}.
 Tiempo disponible: ${plan.minutos} minutos (elegí ${cuantos} lugar/es). Intereses: ${estado.intereses.join(", ")}.
 Clima ahora: ${climaTxt}. ${plan.modo === "destino" ? "El primer lugar de la lista es obligatorio." : ""}
-Elegí SOLO entre estos lugares (id · nombre · categoría · km desde la salida · horario):
-${lista.map(l => `${l.id} · ${l.nombre} · ${l.categoria} · ${km(desdeOrigen(l))} · ${l.horario || "horario sin confirmar"}`).join("\n")}
+Elegí SOLO entre estos lugares (id · nombre · categoría · km desde la salida · horario · estado del horario):
+${lista.map(l => `${l.id} · ${l.nombre} · ${l.categoria} · ${km(desdeOrigen(l))} · ${l.horario || "-"} · ${estadoHorario(l)}`).join("\n")}
+Si un horario no está verificado, recomendá confirmarlo antes de salir.
 Respondé en JSON con esta forma: {"ids":[números en el orden de visita],"texto":"propuesta de 2 a 4 oraciones que explique por qué estos lugares, en tono cercano"}`;
 
   let ids, texto, origen;
@@ -212,19 +226,19 @@ Respondé en JSON con esta forma: {"ids":[números en el orden de visita],"texto
     const json = JSON.parse(d.texto);
     ids = json.ids.map(Number).filter(id => lista.some(l => l.id === id)).slice(0, cuantos);
     texto = json.texto;
-    origen = `Generado por IA (Groq · ${d.modelo}).`;
+    origen = `${ETIQUETA_IA} Texto y orden de visita elegidos por Groq (${d.modelo}) entre lugares reales del dataset.`;
     if (!ids.length) throw new Error("La IA no eligió lugares válidos");
   } catch (err) {
     // Sin la función de Netlify (por ejemplo, abriendo el archivo en la compu) usamos una propuesta simple
     ids = lista.slice(0, cuantos).map(l => l.id);
     texto = `Te proponemos ${ids.map(id => porId(id).nombre).join(" y ")}, los más cercanos a tus intereses.`;
-    origen = "Vista sin IA: la propuesta con Groq funciona cuando el sitio está publicado en Netlify.";
+    origen = `${ETIQUETA_DATO} Vista sin IA: elegimos los más cercanos. La propuesta con Groq funciona cuando el sitio está publicado en Netlify.`;
   }
 
   plan.ids = ids;
   $("#propuesta-texto").classList.remove("cargando");
   $("#propuesta-texto").textContent = texto;
-  $("#propuesta-origen").textContent = origen;
+  $("#propuesta-origen").innerHTML = origen;
   pintarRecorrido();
 }
 
@@ -236,7 +250,7 @@ function pintarRecorrido() {
   let total = 0;
   for (let i = 1; i < puntos.length; i++) total += distanciaKm(puntos[i - 1], puntos[i]);
   plan.km = total;
-  $("#recorrido-resumen").textContent = `${km(total)} aprox. · ${paradas.length} lugar${paradas.length > 1 ? "es" : ""} · ${plan.minutos} min`;
+  $("#recorrido-resumen").innerHTML = `${ETIQUETA_DATO} ${km(total)} aprox. · ${paradas.length} lugar${paradas.length > 1 ? "es" : ""} · ${plan.minutos} min`;
   $("#recorrido-destino").textContent = `Devolución: estación ${devolucion.nombre} · ${paradas.map(p => p.nombre).join(" → ")}`;
 
   if (mapa) mapa.remove();
@@ -269,6 +283,23 @@ $("#terminar").addEventListener("click", () => {
   guardarEstado();
   location.hash = "perfil";
 });
+
+// ---------- Sobre Pedalito: cálculos hechos en vivo sobre los datos de la app ----------
+function pintarSobre() {
+  const culturales = LUGARES.filter(l => l.cultural);
+  const pct = lista => (100 * lista.filter(l => l.dist_m <= 300).length / lista.length).toFixed(1).replace(".", ",") + " %";
+  const n = x => x.toLocaleString("es-AR");
+  $("#sobre-total").textContent = pct(culturales);
+  $("#sobre-detalle").textContent =
+    `de los ${n(culturales.length)} espacios culturales está a 300 m o menos de una estación EcoBici.`;
+  $("#sobre-comunas").innerHTML = [1, 2, 4, 14].map(c => {
+    const lista = culturales.filter(l => l.comuna === c);
+    return `<div class="campo fila-dato"><span>Comuna ${c} · ${n(lista.length)} espacios</span><strong>${pct(lista)}</strong></div>`;
+  }).join("");
+  $("#sobre-cifras").textContent = `${n(LUGARES.length)} lugares en total (${n(culturales.length)} culturales y ` +
+    `${n(LUGARES.length - culturales.length)} gastronómicos) · ${ESTACIONES.length} estaciones · ` +
+    `${LUGARES.filter(l => l.verificado).length} lugares con horario verificado a mano.`;
+}
 
 // ---------- 09 · Perfil ----------
 function pintarPerfil() {

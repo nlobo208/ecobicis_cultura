@@ -54,6 +54,11 @@ Las decisiones del proyecto, con fecha, están en [`decisiones.md`](decisiones.m
 1. Descargar los archivos pendientes en `datasets/` (si pesan más de 50 MB, no subirlos: anotar acá el link y la fecha de descarga).
 2. `python codigo/limpiar_datasets.py`
 3. `python codigo/cruce_estaciones_culturales.py`
+4. `python codigo/generar_lugares_app.py` (arma `app/data/lugares.js`, los datos que usa la app)
+
+## IA
+
+El prompt, los datos que se le mandan a Groq y lo que devuelve están en [`prompts/prompt_recorrido_v1.md`](prompts/prompt_recorrido_v1.md). El paso del Figma al código está documentado en [`entregas/entrega_3/figma_a_codigo.md`](entregas/entrega_3/figma_a_codigo.md).
 
 ## Seguridad
 

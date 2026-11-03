@@ -2,3 +2,6 @@
 [build]
   publish = "app"                  # carpeta que se publica como sitio
   functions = "netlify/functions"  # funciones que corren en el servidor (Groq)
+  # app/env.js no está en el repo (tiene la clave del clima): se genera en cada deploy desde la variable
+  # OPENWEATHER_API_KEY cargada en Netlify. GROQ_API_KEY queda solo para la función, nunca en env.js.
+  command = '''printf 'window.PEDALITO_ENV = {"OPENWEATHER_API_KEY":"%s"};\n' "$OPENWEATHER_API_KEY" > app/env.js'''

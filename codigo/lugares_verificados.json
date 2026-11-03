@@ -1,0 +1,306 @@
+[
+ {
+  "id": 2568,
+  "categoria": "Museo",
+  "lat": -34.577246,
+  "lon": -58.40377,
+  "nombre": "MALBA",
+  "horario": "jueves a lunes: 12:00–20:00 · miércoles: 11:00–20:00",
+  "cerrado": "martes",
+  "fuente_horario": "Sitio oficial MALBA",
+  "url_fuente": "https://www.malba.org.ar/",
+  "img": "malba.png"
+ },
+ {
+  "id": 2695,
+  "categoria": "Museo",
+  "lat": -34.582442,
+  "lon": -58.400859,
+  "nombre": "Museo Nacional de Arte Decorativo",
+  "horario": "martes a domingo: 14:00–19:00",
+  "cerrado": "lunes y feriados",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/en/atractivo/national-museum-decorative-art",
+  "img": "museo_arte_decorativo.png"
+ },
+ {
+  "id": 2715,
+  "categoria": "Museo",
+  "lat": -34.594707,
+  "lon": -58.407807,
+  "nombre": "Museo Xul Solar",
+  "horario": "martes a viernes: 12:00–20:00 · sábado: 12:00–19:00",
+  "cerrado": "domingo, lunes y feriados",
+  "fuente_horario": "Sitio oficial Fundación Pan Klub",
+  "url_fuente": "https://en.xulsolar.org.ar/"
+ },
+ {
+  "id": 2555,
+  "categoria": "Museo",
+  "lat": -34.60027,
+  "lon": -58.364738,
+  "nombre": "Colección Fortabat",
+  "horario": "jueves a domingo: 12:00–20:00",
+  "cerrado": "lunes a miércoles",
+  "fuente_horario": "Indie Hoy (nota de octubre 2026)",
+  "url_fuente": "https://indiehoy.com/arte/6-muestras-de-arte-para-visitar-octubre-buenos-aires-2026/"
+ },
+ {
+  "id": 2674,
+  "categoria": "Museo",
+  "lat": -34.626626,
+  "lon": -58.370973,
+  "nombre": "Museo Histórico Nacional"
+ },
+ {
+  "id": 2648,
+  "categoria": "Museo",
+  "lat": -34.629575,
+  "lon": -58.356957,
+  "nombre": "Museo del Cine",
+  "horario": "lunes, miércoles, jueves y viernes: 11:00–19:00 · sábado, domingo y feriados: 11:00–20:00",
+  "cerrado": "martes",
+  "fuente_horario": "Gobierno de la Ciudad",
+  "url_fuente": "https://buenosaires.gob.ar/museos/museo-del-cine-pablo-ducros-hicken"
+ },
+ {
+  "id": 2717,
+  "categoria": "Museo",
+  "lat": -34.5711024,
+  "lon": -58.4115468,
+  "nombre": "Planetario Galileo Galilei",
+  "horario": "martes a viernes: 09:30–17:00 · sábado, domingo y feriados: 12:00–19:30",
+  "cerrado": "lunes: la fuente no lo informa",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/en/article/galileo-galilei-planetarium"
+ },
+ {
+  "id": 2660,
+  "categoria": "Museo",
+  "lat": -34.580734,
+  "lon": -58.414667,
+  "nombre": "Museo Evita",
+  "horario": "martes a domingo: 11:00–19:00",
+  "cerrado": "lunes",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/es/atractivo/museo-evita"
+ },
+ {
+  "id": 2574,
+  "categoria": "Museo",
+  "lat": -34.6390915,
+  "lon": -58.3632399,
+  "nombre": "Caminito (museo a cielo abierto)"
+ },
+ {
+  "id": 1077,
+  "categoria": "Centro cultural",
+  "lat": -34.604238,
+  "lon": -58.369377,
+  "nombre": "Palacio Libertad (ex CCK)"
+ },
+ {
+  "id": 1103,
+  "categoria": "Centro cultural",
+  "lat": -34.586496,
+  "lon": -58.391578,
+  "nombre": "Centro Cultural Recoleta",
+  "img": "centro_cultural_recoleta.png"
+ },
+ {
+  "id": 1041,
+  "categoria": "Centro cultural",
+  "lat": -34.599801,
+  "lon": -58.374699,
+  "nombre": "Centro Cultural Borges",
+  "horario": "miércoles a domingo: 14:00–21:00",
+  "cerrado": "lunes y martes",
+  "fuente_horario": "Infobae, Guía de Arte y Cultura (16/10/2026)",
+  "url_fuente": "https://www.infobae.com/cultura/agenda-cultura/2026/10/16/guia-de-arte-y-cultura-semana-del-16-al-23-de-octubre-de-2026/"
+ },
+ {
+  "id": 1379,
+  "categoria": "Centro cultural",
+  "lat": -34.629144,
+  "lon": -58.356388,
+  "nombre": "Usina del Arte"
+ },
+ {
+  "id": 1052,
+  "categoria": "Centro cultural",
+  "lat": -34.582983,
+  "lon": -58.429047,
+  "nombre": "Centro Cultural de la Ciencia (C3)",
+  "horario": "viernes y sábado: 12:00–18:00",
+  "cerrado": "domingo a jueves",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/es/otros-establecimientos/centro-cultural-de-la-ciencia-c3"
+ },
+ {
+  "id": 1758,
+  "categoria": "Galería de arte",
+  "lat": -34.639639,
+  "lon": -58.361732,
+  "nombre": "Fundación Proa",
+  "horario": "miércoles a domingo: 12:00–19:00",
+  "cerrado": "lunes y martes",
+  "fuente_horario": "Sitio oficial Fundación Proa",
+  "url_fuente": "https://proa.org/"
+ },
+ {
+  "id": 1794,
+  "categoria": "Galería de arte",
+  "lat": -34.593044,
+  "lon": -58.405367,
+  "nombre": "Galería Patio del Liceo"
+ },
+ {
+  "id": 2989,
+  "categoria": "Sala de teatro",
+  "lat": -34.601054,
+  "lon": -58.382442,
+  "nombre": "Teatro Colón",
+  "horario": "todos los días (visitas guiadas): 10:00–16:45",
+  "cerrado": "1/5, 24/12, 25/12, 31/12 y 1/1",
+  "fuente_horario": "Sitio oficial Teatro Colón",
+  "url_fuente": "https://teatrocolon.org.ar/visitas-guiadas/"
+ },
+ {
+  "id": 3024,
+  "categoria": "Sala de teatro",
+  "lat": -34.598841,
+  "lon": -58.384013,
+  "nombre": "Teatro Cervantes",
+  "horario": "miércoles a domingo (boletería): 10:00–22:00",
+  "cerrado": "lunes y martes",
+  "fuente_horario": "Sitio oficial Teatro Cervantes",
+  "url_fuente": "https://www.teatrocervantes.gob.ar/"
+ },
+ {
+  "id": 3037,
+  "categoria": "Sala de teatro",
+  "lat": -34.604241,
+  "lon": -58.388642,
+  "nombre": "Teatro San Martín",
+  "horario": "martes a viernes (salas de exposición): 14:00–21:00 · sábado y domingo (salas de exposición): 13:00–20:00",
+  "cerrado": "lunes",
+  "fuente_horario": "Infobae, Guía de Arte y Cultura (16/10/2026)",
+  "url_fuente": "https://www.infobae.com/cultura/agenda-cultura/2026/10/16/guia-de-arte-y-cultura-semana-del-16-al-23-de-octubre-de-2026/"
+ },
+ {
+  "id": 1393,
+  "categoria": "Club de música en vivo",
+  "lat": -34.585209,
+  "lon": -58.436898,
+  "nombre": "Boris Club de Jazz"
+ },
+ {
+  "id": 1417,
+  "categoria": "Club de música en vivo",
+  "lat": -34.613091,
+  "lon": -58.370677,
+  "nombre": "La Trastienda",
+  "horario": "según programación: desde 21:00",
+  "fuente_horario": "Sitio oficial La Trastienda",
+  "url_fuente": "https://www.latrastienda.com/"
+ },
+ {
+  "id": 1694,
+  "categoria": "Espacio ferial",
+  "lat": -34.62048979,
+  "lon": -58.37171972,
+  "nombre": "Feria de San Telmo (Plaza Dorrego)",
+  "horario": "domingo: 11:00–17:00",
+  "cerrado": "lunes a sábado",
+  "fuente_horario": "Gobierno de la Ciudad (Disfrutemos BA)",
+  "url_fuente": "https://disfrutemosba.buenosaires.gob.ar/ciudad-en-foco/feria-de-san-telmo"
+ },
+ {
+  "id": 1669,
+  "categoria": "Espacio ferial",
+  "lat": -34.58499,
+  "lon": -58.39101,
+  "nombre": "Feria de Plaza Francia (Recoleta)",
+  "horario": "sábado, domingo y feriados: 11:00–20:00",
+  "cerrado": "lunes a viernes",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/en/atractivo/plaza-francia-craft-fair"
+ },
+ {
+  "id": 2276,
+  "categoria": "Monumentos y lugares históricos",
+  "lat": -34.60863,
+  "lon": -58.37346,
+  "nombre": "Cabildo",
+  "horario": "martes, miércoles y viernes: 10:30–17:00 · jueves: 10:30–20:00 · sábado, domingo y feriados: 10:30–18:00",
+  "cerrado": "lunes: la fuente no lo informa",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/en/otros-establecimientos/cabildo"
+ },
+ {
+  "id": 2420,
+  "categoria": "Monumentos y lugares históricos",
+  "lat": -34.574579,
+  "lon": -58.41142,
+  "nombre": "Jardín Japonés",
+  "horario": "todos los días: 10:00–18:45",
+  "cerrado": "ninguno",
+  "fuente_horario": "Sitio oficial Jardín Japonés",
+  "url_fuente": "https://jardinjapones.org.ar/"
+ },
+ {
+  "id": 1985,
+  "categoria": "Librería",
+  "lat": -34.595904,
+  "lon": -58.39422,
+  "nombre": "El Ateneo Grand Splendid",
+  "horario": "lunes a jueves: 09:00–22:00 · viernes y sábado: 09:00–00:00 · domingo: 12:00–22:00",
+  "cerrado": "ninguno",
+  "fuente_horario": "Ente de Turismo BA",
+  "url_fuente": "https://turismo.buenosaires.gob.ar/en/atractivo/el-ateneo-grand-splendid"
+ },
+ {
+  "id": 1362,
+  "categoria": "Restaurante",
+  "lat": -34.6088255573869,
+  "lon": -58.3781220717603,
+  "nombre": "Café Tortoni",
+  "horario": "todos los días: 08:00–21:00",
+  "cerrado": "ninguno",
+  "fuente_horario": "Sitio oficial Café Tortoni",
+  "url_fuente": "https://www.cafetortoni.com.ar/"
+ },
+ {
+  "id": 2567,
+  "categoria": "Bar",
+  "lat": -34.6196221287313,
+  "lon": -58.374140811537,
+  "nombre": "Bar El Federal",
+  "horario": "todos los días: 07:00–02:00",
+  "cerrado": "ninguno",
+  "fuente_horario": "oferta_gastronomica__comunas_1_2_4_14_cafe_bar_restaurante.csv",
+  "url_fuente": "https://data.buenosaires.gob.ar/dataset/oferta-gastronomica"
+ },
+ {
+  "id": 170,
+  "categoria": "Restaurante",
+  "lat": -34.5854572458865,
+  "lon": -58.4252970837866,
+  "nombre": "El Preferido de Palermo",
+  "horario": "lunes a sábado: 12:00–16:00 · lunes a sábado: 20:00–sin hora fija",
+  "cerrado": "domingo",
+  "fuente_horario": "oferta_gastronomica__comunas_1_2_4_14_cafe_bar_restaurante.csv",
+  "url_fuente": "https://data.buenosaires.gob.ar/dataset/oferta-gastronomica"
+ },
+ {
+  "id": 2196,
+  "categoria": "Restaurante",
+  "lat": -34.6039246482412,
+  "lon": -58.3794828038651,
+  "nombre": "Confitería Ideal",
+  "horario": "todos los días: 08:00–22:00",
+  "cerrado": "ninguno",
+  "fuente_horario": "oferta_gastronomica__comunas_1_2_4_14_cafe_bar_restaurante.csv",
+  "url_fuente": "https://data.buenosaires.gob.ar/dataset/oferta-gastronomica"
+ }
+]

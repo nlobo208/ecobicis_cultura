@@ -149,6 +149,20 @@ h2 { font-size: 20px; margin: 28px 0 12px; }
 .fila-dato { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 14px 16px; }
 .link-texto { color: var(--tinta); font-size: 13px; font-weight: 600; }
 
+/* Etiquetas: dato calculado vs. sugerido por IA */
+.badge {
+  display: inline-block; padding: 3px 8px; border-radius: 10px; margin-right: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: .2px; vertical-align: middle;
+}
+.badge.calculado { background: var(--celeste); color: var(--tinta); }
+.badge.ia { background: var(--violeta); color: var(--blanco); }
+
+/* Sobre Pedalito */
+.texto { font-size: 14px; line-height: 1.55; }
+ul.texto { padding-left: 18px; }
+ul.texto li { margin-bottom: 8px; }
+.volver-texto { display: inline-block; margin: 12px 0 4px; color: var(--tinta); font-size: 13px; font-weight: 600; text-decoration: none; }
+
 /* Barra de navegación */
 .barra {
   position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
