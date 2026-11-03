@@ -119,12 +119,13 @@
           <input id="buscador" type="search" placeholder="⌕ Museo, café, teatro…">
         </label>
         <div class="chips" id="filtros">
-          <button class="chip activo" data-filtro="cerca">Más cerca</button>
-          <button class="chip" data-filtro="intereses">Mis intereses</button>
-          <button class="chip" data-filtro="verificado">Horario verificado</button>
+          <button class="chip activo" data-filtro="cerca" aria-pressed="true">Más cerca</button>
+          <button class="chip" data-filtro="intereses" aria-pressed="false">Mis intereses</button>
+          <button class="chip" data-filtro="verificado" aria-pressed="false">Horario verificado</button>
         </div>
         <h2 id="cantidad">0 lugares</h2>
         <div class="apiladas foco" id="lista-lugares"></div>
+        <button class="fila-opcion agregar" id="ver-mas" type="button" hidden>Ver más lugares</button>
       </div>
     </div>
   </section>
@@ -264,11 +265,11 @@
       </div>
 
       <h2>¿Dónde querés compartirlo?</h2>
-      <button class="fila-opcion activo" data-red="instagram">Instagram Stories <span aria-hidden="true">→</span></button>
-      <button class="fila-opcion" data-red="whatsapp">WhatsApp <span aria-hidden="true">+</span></button>
-      <button class="fila-opcion" data-red="comunidad">Comunidad Pedalito <span aria-hidden="true">+</span></button>
+      <button class="fila-opcion" data-red="instagram">Instagram Stories <span aria-hidden="true">→</span></button>
+      <button class="fila-opcion" data-red="whatsapp">WhatsApp <span aria-hidden="true">→</span></button>
+      <button class="fila-opcion" data-red="comunidad">Comunidad Pedalito <span aria-hidden="true">→</span></button>
     </div>
-    <button class="boton fijo" id="compartir-ya">Compartir <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="compartir-ya">Finalizar <span aria-hidden="true">→</span></button>
   </section>
 
   <!-- 11 · Detalle lugar -->
@@ -282,11 +283,8 @@
       <h1 id="detalle-nombre"></h1>
       <p class="sub" id="detalle-meta"></p>
       <p class="texto" id="detalle-desc"></p>
-      <div class="caja-info">
-        <p class="etiqueta">Hoy</p>
-        <strong id="detalle-horario"></strong>
-        <span>Verificá horarios antes de salir</span>
-      </div>
+      <div class="horarios" id="detalle-horarios"></div>
+      <p class="credito" id="detalle-credito" hidden></p>
     </div>
     <button class="boton fijo" id="detalle-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
   </section>
@@ -306,9 +304,11 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="env.js"></script>
 <script src="data/lugares.js"></script>
+<script src="data/fotos.js"></script>
 <script src="data/estaciones_modelo.js"></script>
 <script src="data/ciclovias.js"></script>
 <script src="data/actividades.js"></script>
+<script src="js/horarios.js"></script>
 <script src="js/prediccion.js"></script>
 <script src="js/ruteo.js"></script>
 <script src="js/guia.js"></script>

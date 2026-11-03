@@ -365,3 +365,31 @@ a { color: inherit; }
 .paso-actual { flex-direction: column; align-items: stretch; gap: 12px; }
 .paso-fila { display: flex; align-items: center; gap: 14px; }
 .boton.compacto { height: 48px; border-radius: 16px; }
+
+/* ---------- Horarios del detalle: la semana de un vistazo ---------- */
+.horarios { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 2px solid var(--azul); border-radius: 24px; background: #fff; }
+.horarios-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.horarios .etiqueta { color: var(--azul); opacity: 1; }
+.estado { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(9, 41, 87, .08); color: var(--noche); }
+.estado::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--rosa); }
+.estado.abierto::before { background: #1db954; }
+.semana { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.dia { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 76px; padding: 8px 2px; border-radius: 14px; background: rgba(32, 58, 233, .08); color: var(--noche); text-align: center; }
+.dia b { font-size: 12px; letter-spacing: .02em; }
+.dia span { font-size: 11px; font-weight: 600; line-height: 1.15; word-break: break-word; }
+.dia.cerrado { background: rgba(9, 41, 87, .05); color: var(--texto-suave); }
+.dia .cerrado { font-weight: 400; font-size: 10px; }
+.dia.hoy { position: relative; background: var(--mesh); color: var(--crema); isolation: isolate; }
+.dia.hoy::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.dia.hoy.cerrado { background: var(--noche); }
+.dia.hoy.cerrado::after { display: none; }
+.horarios-texto { font-size: 15px; font-weight: 600; }
+.horarios-notas { font-size: 12px; font-weight: 600; color: var(--noche); }
+.horarios-nota { font-size: 12px; color: var(--texto-suave); }
+.credito { font-size: 11px; color: var(--texto-suave); }
+.credito a { color: inherit; }
+
+/* ---------- Explorar: las tarjetas de abajo (todavía no vistas) se apagan ---------- */
+.apiladas.foco .tarjeta-apilada { opacity: var(--o, 1); transition: transform .1s linear, opacity .15s linear; }
+#explorar #ver-mas { margin-top: 18px; }
+#compartir { padding-bottom: 190px; }       /* que el botón fijo no tape la última opción */

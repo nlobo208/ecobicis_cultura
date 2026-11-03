@@ -10,9 +10,11 @@ const ENV = Object.assign({
 }, window.PEDALITO_ENV || {});
 
 const LUGARES = window.PEDALITO_LUGARES;
+// Fotos con licencia libre de los hotspots (data/fotos.js): se suman a cada lugar. Los lugares sin foto libre quedan sin imagen.
+Object.entries(window.PEDALITO_FOTOS || {}).forEach(([id, f]) => { const l = LUGARES.find(x => x.id === Number(id)); if (l) { l.img = `lugares/${f.archivo}`; l.foto = f; } });
 const ACTIVIDADES = window.PEDALITO_ACTIVIDADES || [];
 const ESTACIONES = window.PEDALITO_ESTACIONES;
-const PRED = window.PedalitoPrediccion, TEND = window.PedalitoTendencias;
+const PRED = window.PedalitoPrediccion, TEND = window.PedalitoTendencias, HOR = window.PedalitoHorarios;
 
 // Punto de salida. El de .env es solo el centro del mapa por defecto: la persona elige desde dónde sale en cada
 // sesión (pantalla "¿Desde dónde salís?") y vale por 1 hora. No se guarda entre días: "cerca tuyo" es de ahora.
@@ -387,7 +389,8 @@ function pintarFechas() {
   $("#fechas").innerHTML = lista.map(a => {
     const lugar = porId(a.lugar_id);
     const etiqueta = a.hasta ? `HASTA ${a.hasta.slice(8, 10)}/${a.hasta.slice(5, 7)}` : a.tipo.toUpperCase();
-    const dato = a.abre ? `${a.lugar} · ${a.dias || ""} ${a.abre}–${a.cierra}` : a.lugar;
+    const cuando = a.abre ? HOR.resumenActividad(a.dias, a.abre, a.cierra) : "";
+    const dato = cuando ? `${a.lugar} · ${cuando}` : a.lugar;
     return tarjetaLugarHTML({ lugar, etiqueta, titulo: a.nombre, metas: [dato], textoSinImagen: a.tipo });
   }).join("") || `<p class="nota">No hay fechas cargadas.</p>`;
 }
@@ -442,33 +445,40 @@ async function pintarTendencias() {
 // ---------- 04 · Explorar ----------
 const COLOR_TARJETA = { naranja: "#f76c09", celeste: "#00baf1", verde: "#38ea59", rosa: "#f90083" };
 const ZONA_FOCO = 90;             // px de scroll en los que una tarjeta pasa de tamaño normal a agrandada (= lo que se asoma de cada tarjeta apilada)
-let filtro = "cerca", mapaExp, marcaExp, geoPendiente;
+let mapaExp, marcaExp, geoPendiente;
+// Los tres filtros son interruptores independientes: se pueden combinar o apagar todos (entonces se ve todo, del más cerca al más lejos)
+const filtros = { cerca: true, intereses: false, verificado: false };
+let limite = MAX_LISTA;           // cuántos lugares se muestran; "Ver más" suma otra tanda
 
-function pintarExplorar() {
+function pintarExplorar({ masLugares = false } = {}) {
   const q = $("#buscador").value.trim().toLowerCase();
   let lista = LUGARES.filter(l => !q || (l.nombre + " " + l.categoria + " " + l.barrio).toLowerCase().includes(q));
-  if (filtro === "intereses") lista = lista.filter(l => estado.intereses.includes(l.categoria));
-  if (filtro === "verificado") lista = lista.filter(l => l.verificado);
-  if (filtro === "cerca") lista = lista.filter(l => desdeOrigen(l) <= 5);
+  if (filtros.intereses) lista = lista.filter(l => estado.intereses.includes(l.categoria));
+  if (filtros.verificado) lista = lista.filter(l => l.verificado);
+  if (filtros.cerca) lista = lista.filter(l => desdeOrigen(l) <= 5);
   lista.sort((a, b) => desdeOrigen(a) - desdeOrigen(b));
-  const mostrados = lista.slice(0, MAX_LISTA);
-  $("#cantidad").textContent = `${lista.length} lugares${lista.length > MAX_LISTA ? ` · mostrando ${MAX_LISTA}` : ""}`;
+  const mostrados = lista.slice(0, limite);
+  $("#cantidad").textContent = lista.length > mostrados.length ? `Mostrando ${mostrados.length} de ${lista.length} lugares` : `${lista.length} lugares`;
   $("#lista-lugares").innerHTML = mostrados.map((l, i) => `
     <a class="tarjeta-apilada ${COLORES[i % COLORES.length]}" href="#lugar/${l.id}">
       <strong>${esc(l.nombre)}</strong>
       <span>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))} · ${esc(l.barrio)}</span>
       <span class="ver">Ver lugar →</span>
     </a>`).join("");
+  $("#ver-mas").hidden = lista.length <= mostrados.length;
+  $("#ver-mas").textContent = `Ver más lugares (${Math.min(MAX_LISTA, lista.length - mostrados.length)} más)`;
+  $$("#filtros .chip").forEach(c => { c.classList.toggle("activo", filtros[c.dataset.filtro]); c.setAttribute("aria-pressed", filtros[c.dataset.filtro]); });
   medirFoco();
-  pintarMapaExplorar(mostrados);
+  pintarMapaExplorar(mostrados, !masLugares);   // con "Ver más" el mapa no se vuelve a encuadrar
 }
-$("#buscador").addEventListener("input", () => { $("#hoja-explorar .hoja-scroll").scrollTop = 0; pintarExplorar(); });
+const reiniciarLista = () => { limite = MAX_LISTA; $("#hoja-explorar .hoja-scroll").scrollTop = 0; pintarExplorar(); };
+$("#buscador").addEventListener("input", reiniciarLista);
 $("#filtros").addEventListener("click", e => {
-  if (!e.target.dataset.filtro) return;
-  filtro = e.target.dataset.filtro;
-  $$("#filtros .chip").forEach(c => c.classList.toggle("activo", c === e.target));
-  pintarExplorar();
+  const f = e.target.dataset.filtro; if (!f) return;
+  filtros[f] = !filtros[f];                       // tocar de nuevo apaga el filtro
+  reiniciarLista();
 });
+$("#ver-mas").addEventListener("click", () => { limite += MAX_LISTA; pintarExplorar({ masLugares: true }); });
 
 // Las tarjetas de colores crecen (y su texto también) al pasar por la altura de la primera; antes y después vuelven a su tamaño.
 let focoBase = 0;
@@ -476,8 +486,10 @@ function medirFoco() { const primera = $("#lista-lugares").firstElementChild; fo
 function actualizarFoco() {
   const scroll = $("#hoja-explorar .hoja-scroll");
   [...$("#lista-lugares").children].forEach(c => {
-    const f = Math.max(0, 1 - Math.abs((c.offsetTop - scroll.scrollTop) - focoBase) / ZONA_FOCO);
+    const d = (c.offsetTop - scroll.scrollTop) - focoBase;                  // + = todavía no llegó a la altura de la primera
+    const f = Math.max(0, 1 - Math.abs(d) / ZONA_FOCO);
     c.style.setProperty("--f", f.toFixed(3));
+    c.style.setProperty("--o", (d > 0 ? 1 - 0.55 * Math.min(1, d / ZONA_FOCO) : 1).toFixed(3));   // las de abajo, que aún no estás viendo, se apagan
     c.style.zIndex = f > 0.05 ? String(10 + Math.round(f * 10)) : "";       // la que crece queda por encima de las vecinas
   });
 }
@@ -488,7 +500,7 @@ $("#hoja-explorar .hoja-scroll").addEventListener("scroll", () => {
 }, { passive: true });
 
 // Mapa de fondo de Explorar: tu punto de salida y los lugares de la lista, con el color de su tarjeta
-function pintarMapaExplorar(lista) {
+function pintarMapaExplorar(lista, reencuadrar = true) {
   if (!window.maplibregl) return;
   const geo = { type: "FeatureCollection", features: lista.map((l, i) => ({ type: "Feature",
     geometry: { type: "Point", coordinates: [l.lon, l.lat] },
@@ -516,6 +528,7 @@ function pintarMapaExplorar(lista) {
     mapaExp.getSource("lugares")?.setData(geo);
   }
   // Encuadre: tu punto y los lugares, en la parte del mapa que no tapa el panel
+  if (!reencuadrar) return;
   const puntos = [ORIGEN, ...lista], lons = puntos.map(p => p.lon), lats = puntos.map(p => p.lat);
   mapaExp.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
     { padding: { top: 70, left: 30, right: 30, bottom: Math.round(hojaExplorar.visiblePx()) + 20 }, maxZoom: 15.5, duration: 400 });
@@ -525,6 +538,31 @@ const hojaExplorar = hacerDeslizable($("#hoja-explorar"), () => {
 });
 
 // ---------- 11 · Detalle lugar ----------
+// Horarios: se reinterpreta el texto del dataset (js/horarios.js) y se muestra como una semana de un vistazo.
+// Si no se puede entender con certeza, se muestra el texto original, sin inventar nada.
+function pintarHorarios(l) {
+  const cont = $("#detalle-horarios"), h = HOR.interpretar(l.horario);
+  const fuente = [l.cerrado ? `Cerrado: ${esc(l.cerrado)}.` : "", l.fuente_horario ? `Fuente: ${esc(l.fuente_horario)}.` : ""].filter(Boolean).join(" ");
+  const pie = `<p class="horarios-nota">${fuente} Verificá horarios antes de salir.</p>`;
+  if (!l.horario) { cont.innerHTML = `<p class="etiqueta">Horarios</p><p class="horarios-texto">Este lugar no tiene horario cargado.</p>${pie}`; return; }
+  if (!h.ok || h.dudoso) {
+    cont.innerHTML = `<p class="etiqueta">Horarios</p><p class="horarios-texto">${esc(l.horario)}</p>
+      <p class="horarios-nota">No pudimos ordenar este horario con certeza, así que lo mostramos tal como figura en los datos.</p>${pie}`;
+    return;
+  }
+  const hoy = (new Date().getDay() + 6) % 7, estadoHoy = HOR.estadoAhora(h);
+  const dias = h.semana.map((d, i) => {
+    const horas = d.cerrado ? `<span class="cerrado">Cerrado</span>`
+      : d.texto ? `<span>${esc(d.texto)}</span>` : d.tramos.map(t => `<span>${esc(HOR.tramoCorto(t))}</span>`).join("");
+    return `<li class="dia ${d.cerrado ? "cerrado" : "abierto"} ${i === hoy ? "hoy" : ""}" ${i === hoy ? 'aria-current="date"' : ""}><b>${HOR.INICIAL[i]}</b>${horas}</li>`;
+  }).join("");
+  cont.innerHTML = `
+    <div class="horarios-cab"><p class="etiqueta">Horarios</p>
+      ${estadoHoy ? `<span class="estado ${estadoHoy.abierto ? "abierto" : "cerrado"}">${esc(estadoHoy.texto)}</span>` : ""}</div>
+    <ul class="semana">${dias}</ul>
+    ${h.notas.length ? `<p class="horarios-notas">${h.notas.map(esc).join(" · ")}</p>` : ""}${pie}`;
+}
+
 function pintarLugar(id) {
   const l = porId(id);
   if (!l) { location.hash = "explorar"; return; }
@@ -534,7 +572,10 @@ function pintarLugar(id) {
   $("#detalle-nombre").textContent = l.nombre;
   $("#detalle-meta").textContent = `${fmtKm(desdeOrigen(l))} · ${l.barrio}`;
   $("#detalle-desc").textContent = `${l.direccion}. Estación EcoBici más cercana a ${l.dist_m} m.`;
-  $("#detalle-horario").textContent = l.horario || "Horario sin dato";
+  pintarHorarios(l);
+  const credito = $("#detalle-credito");
+  credito.hidden = !l.foto;
+  if (l.foto) credito.innerHTML = `Foto: ${esc(l.foto.autor)} · <a href="${esc(l.foto.pagina)}" target="_blank" rel="noopener">${esc(l.foto.licencia)}</a> · Wikimedia Commons`;
   const guardado = estado.guardados.includes(l.id);
   $("#guardar-lugar").textContent = guardado ? "♥" : "♡";
   $("#guardar-lugar").onclick = () => {
@@ -720,7 +761,7 @@ Tiempo: ${plan.minutos} minutos (elegí ${cuantos} lugar/es). Intereses: ${estad
 ${elegidos.length ? `LUGARES OBLIGATORIOS (la persona los eligió, tienen que estar todos en el recorrido): ${elegidos.join(", ")}. Podés sumar otros solo si sobra tiempo.` : ""}
 ${plan.hasta ? `La persona quiere TERMINAR en "${plan.hasta.nombre}": ordená los lugares para que el último quede de camino hacia ahí.` : ""}
 LUGARES (id · nombre · categoría · km desde la salida · horario):
-${lista.map(l => `${l.id} · ${l.nombre} · ${l.categoria} · ${fmtKm(desdeOrigen(l))} · ${l.horario || "sin dato"}`).join("\n")}
+${lista.map(l => `${l.id} · ${l.nombre} · ${l.categoria} · ${fmtKm(desdeOrigen(l))} · ${l.horario ? HOR.resumen(l.horario) : "sin dato"}`).join("\n")}
 ESTACIONES PARA RETIRAR (número · nombre · distancia · probabilidad de bicis): ${retiros.map(e => `${lineaEstacion(e)} · ${e.nivelBicis}`).join(" | ")}
 ESTACIONES PARA DEVOLVER, por lugar (número · nombre · distancia al lugar · probabilidad de anclajes libres):
 ${lista.map(l => `lugar ${l.id}: ${devoluciones[l.id].map(e => `${lineaEstacion(e)} · ${e.nivelAnclajes}`).join(" | ") || "ninguna"}`).join("\n")}
@@ -1083,18 +1124,17 @@ function pintarCompartir() {
   $("#compartir-ruta").textContent = u ? `por Buenos Aires · ${ORIGEN.nombre} → ${u.ids.map(id => porId(id).nombre).join(" → ")}` : "por Buenos Aires";
   rueda.reiniciar();
 }
-let redElegida = "instagram";
-$$("#compartir [data-red]").forEach(b => b.addEventListener("click", () => {
-  redElegida = b.dataset.red;
-  $$("#compartir [data-red]").forEach(x => { x.classList.toggle("activo", x === b); x.lastElementChild.textContent = x === b ? "→" : "+"; });
-}));
-$("#compartir-ya").addEventListener("click", async () => {
-  const texto = `${$("#compartir-km").textContent} por Buenos Aires con Pedalito. ${$("#compartir-ruta").textContent}`;
-  const boton = $("#compartir-ya");
-  try {
+// Cada opción comparte directamente; el botón de abajo cierra el recorrido y vuelve al inicio.
+const textoCompartir = () => `${$("#compartir-km").textContent} por Buenos Aires con Pedalito. ${$("#compartir-ruta").textContent}`;
+$$("#compartir [data-red]").forEach(b => b.addEventListener("click", async () => {
+  const texto = textoCompartir(), red = b.dataset.red;
+  if (red === "whatsapp") { window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener"); return; }
+  if (red === "comunidad") { aviso("La comunidad de Pedalito todavía no está disponible."); return; }
+  try {                                              // Instagram Stories no se puede abrir con un link: se usa el menú de compartir del celular
     if (navigator.share) await navigator.share({ title: "Pedalito", text: texto });
-    else { await navigator.clipboard.writeText(texto); boton.firstChild.textContent = "Copiado para pegar en " + redElegida + " "; }
-  } catch { /* la persona canceló */ }
-});
+    else { await navigator.clipboard.writeText(texto); aviso("Texto copiado: pegalo en tu historia de Instagram."); }
+  } catch (e) { if (e?.name !== "AbortError") aviso("No pudimos compartir desde acá. Probá desde el celular."); }   // AbortError = la persona canceló
+}));
+$("#compartir-ya").addEventListener("click", () => { location.hash = "inicio"; });
 
 mostrar();
