@@ -360,6 +360,12 @@ function pintarPin(el, numero, clave, sinDatos = "") {
   return false;
 }
 
+/** Sin datos en vivo: pinta el círculo con el color de la estimación (rojo bajo, naranja medio, amarillo alto). */
+function pintarEstimado(el, est, clave) {
+  const p = PRED.predecirEstacion(est.numero, new Date(), 0), nv = clave === "bicis" ? p.nivelBicis : p.nivelAnclajes;
+  el.style.background = COLOR_NIVEL[nv]; el.classList.toggle("claro", nv === "alta");
+}
+
 function popupEstacion(e) {
   const v = DISP.de(e.numero);
   if (v) {
@@ -367,7 +373,7 @@ function popupEstacion(e) {
       `${v.deshabilitadas ? `<br>Bicis fuera de servicio: ${v.deshabilitadas}` : ""}<br><small>Actualizado ${esc(DISP.hora(DISP.estado.actualizado))}</small>`;
   }
   const p = PRED.predecirEstacion(e.numero, new Date(), 0);
-  return `<strong>${esc(e.nombre)}</strong><br>Bicis: ${esc(p.nivelBicis)} (${esc(pct(p.bicis))}) · estimado<br><small>Sin datos en vivo</small>`;
+  return `<strong>${esc(e.nombre)}</strong><br>Bicis: ${esc(p.nivelBicis)} · estimado<br><small>Sin datos en vivo</small>`;
 }
 
 /** Crea o actualiza los círculos de las 110 estaciones sobre el mapa del Home. */
@@ -1002,7 +1008,7 @@ function pintarMapaRecorrido(validos, elegida) {
   // Etapa 1 (retirar): círculo con las bicis disponibles ahora. Etapa 2 (dejar la bici): círculo con los anclajes libres ahora.
   const pinEstacion = (est, p, clave, rol) => {
     const el = document.createElement("button"); el.type = "button";
-    if (!pintarPin(el, est.numero, clave, "E")) el.style.background = clave === "bicis" ? "#203ae9" : "#00baf1";   // sin datos en vivo: letra E
+    if (!pintarPin(el, est.numero, clave, "E")) pintarEstimado(el, est, clave);   // sin datos en vivo: letra E con el color de la estimación
     el.classList.remove("estimado"); pinesRecorrido.push({ el, est, clave });
     new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat])
       .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(`<strong>${rol}: ${esc(est.nombre)}</strong><br>${esc(dispTexto(est, clave))}`)).addTo(mapa);
@@ -1041,7 +1047,7 @@ function etiquetaBoton() {
   if (guia.i === guia.pasos.length - 1) return "Terminar recorrido";
   if (p.tipo === "retiro") return "Ya retiré la bici";
   if (p.tipo === "lugar" || p.tipo === "devolucion") return "Seguir";
-  return "Siguiente paso";
+  return guia.hayFix ? "Saltear paso" : "Siguiente paso";   // con GPS la guía avanza sola; el botón queda por si falla
 }
 
 function pintarPaso() {
@@ -1100,12 +1106,21 @@ function seguirGPS() {
     }
     marcaYo?.setLngLat([yo.lon, yo.lat]);
     if (mapa && Date.now() - guia.ultimoArrastre > 8000) mapa.easeTo({ center: [yo.lon, yo.lat], zoom: Math.max(mapa.getZoom(), 16.5), duration: 900 });
-    const p = guia.pasos[guia.i]; if (!p) return;
-    guia.restante = Math.round(GUIA.aMetros([yo.lon, yo.lat], p.punto));
-    const umbral = (p.modo === "bici" ? 30 : 20) + Math.min(precision, 30) / 2;
-    if (guia.restante <= umbral) {
-      if (p.tipo === "maniobra" || p.tipo === "sinruta") { avanzar(false); return; }
-      if (p.celebra) celebrarLlegada(p);              // llegaste a una estación o a un lugar: la guía espera tu "Seguir"
+    let p = guia.pasos[guia.i]; if (!p) return;
+    const aqui = [yo.lon, yo.lat], umbralDe = s => (s.modo === "bici" ? 30 : 20) + Math.min(precision, 30) / 2;
+    const esGiro = s => s && (s.tipo === "maniobra" || s.tipo === "sinruta");
+    const esParada = s => s.tipo === "retiro" || s.tipo === "devolucion" || s.tipo === "lugar";
+    // Como en Google Maps: si ya estás en un giro más adelante (te salteaste uno o el GPS tardó), la guía salta hasta ahí
+    if (esGiro(p)) for (let k = 3; k >= 1; k--) {
+      const s = guia.pasos[guia.i + k];
+      if (esGiro(s) && guia.pasos.slice(guia.i, guia.i + k).every(esGiro) && GUIA.aMetros(aqui, s.punto) <= umbralDe(s)) { guia.i += k; p = s; break; }
+    }
+    guia.restante = Math.round(GUIA.aMetros(aqui, p.punto));
+    if (guia.restante <= umbralDe(p)) {
+      if (esGiro(p)) { avanzar(false); return; }                  // giro cumplido: pasa solo al siguiente
+      if (esParada(p)) { p.llegado = true; if (p.celebra) celebrarLlegada(p); }    // llegaste a una estación o a un lugar
+    } else if (p.llegado && esParada(p) && guia.restante > 45 && guia.i < guia.pasos.length - 1) {
+      avanzar(false); return;                                      // ya estuviste ahí y te alejaste (retiraste, dejaste la bici o seguiste): sigue solo
     }
     pintarPaso();
   }, () => { guia.sinGPS = true; pintarPaso(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -1202,8 +1217,7 @@ function refrescarDisponibilidad() {
   pintarEstacionesHome();
   pinesRecorrido.forEach(({ el, est, clave, fondo }) => {
     if (!pintarPin(el, est.numero, clave, fondo ? "" : "E")) {
-      if (fondo) { const p = PRED.predecirEstacion(est.numero, new Date(), 0); el.style.background = COLOR_NIVEL[p.nivelBicis]; }
-      else el.style.background = clave === "bicis" ? "#203ae9" : "#00baf1";
+      pintarEstimado(el, est, clave);
     }
     el.classList.remove("estimado"); el.classList.toggle("fondo", !!fondo);
   });
