@@ -3,7 +3,7 @@
 // Cómo se reparte el trabajo:
 //  - El ruteo (js/ruteo.js) calcula el camino por calles y trae las maniobras reales: qué calle, qué giro, cuántos metros.
 //  - Acá se arma la lista de pasos y se escribe una instrucción en castellano para cada uno (texto "automático").
-//  - La IA reescribe esas instrucciones como un navegador de voz (mejorarConIA). Solo puede usar las calles y lugares
+//  - La IA reescribe esas instrucciones como un navegador paso a paso (mejorarConIA). Solo puede usar las calles y lugares
 //    que le damos; si no responde, queda el texto automático y la app lo avisa.
 
 (function () {
@@ -53,6 +53,13 @@
     return FLECHA[p.giro] || "↑";
   }
 
+  /** Dato de la estación para la IA: real ("hay 7 bicis ahora") si hay API de EcoBici conectada, estimado si no. */
+  function extraDisponibilidad(est, clave) {
+    const v = window.PedalitoDisponibilidad?.de(est.numero);
+    if (v) { const n = clave === "bicis" ? v.bicis : v.anclajes; return `hay ${n} ${clave === "bicis" ? (n === 1 ? "bici" : "bicis") : (n === 1 ? "anclaje libre" : "anclajes libres")} ahora`; }
+    return clave === "bicis" ? `probabilidad de bicis ${est.nivelBicis} (estimada)` : `probabilidad de anclajes libres ${est.nivelAnclajes} (estimada)`;
+  }
+
   // ---------- Lista de pasos ----------
   const aMetros = (a, b) => {
     const k = 111320, dx = (b[0] - a[0]) * k * Math.cos(a[1] * Math.PI / 180), dy = (b[1] - a[1]) * k;
@@ -76,7 +83,7 @@
       const ruta = t.rutas?.[t.elegida], modo = t.modo;
       if (modo === "bici") {
         pasos.push({ modo: "bici", tipo: "retiro", nombre: t.retiro.nombre, punto: [t.desde.lon, t.desde.lat], metros: pend,
-          extra: `probabilidad de bicis ${t.retiro.nivelBicis} (${Math.round(t.retiro.bicis * 100)} %)` });
+          est: t.retiro, extra: extraDisponibilidad(t.retiro, "bicis") });
         pend = 0;
       }
       if (!ruta) {
@@ -94,7 +101,7 @@
       }
       if (modo === "bici") {
         pasos.push({ modo: "bici", tipo: "devolucion", nombre: `estación ${t.devolucion.nombre}`, punto: [t.hasta.lon, t.hasta.lat], metros: pend,
-          celebra: true, extra: `anclajes libres ${t.devolucion.nivelAnclajes} (${Math.round(t.devolucion.anclajes * 100)} %)` });
+          celebra: true, est: t.devolucion, extra: extraDisponibilidad(t.devolucion, "anclajes") });
         pend = 0;
       } else if (t.tipo === "lugar" || t.tipo === "final") {
         pasos.push(meta(t)); pend = 0;
@@ -111,7 +118,7 @@
   }
 
   /**
-   * Pide a la IA que reescriba las instrucciones como un navegador de voz. Va por lotes (el pedido tiene un tope de largo).
+   * Pide a la IA que reescriba las instrucciones como un navegador paso a paso. Va por lotes (el pedido tiene un tope de largo).
    * Solo acepta textos cortos y de la cantidad exacta; los pasos de llegada conservan el nombre exacto del lugar.
    * Devuelve true si la IA mejoró al menos un paso.
    */
@@ -124,7 +131,7 @@
       try {
         const lineas = lote.map((p, i) => [i, p.modo === "bici" ? "bici" : "a pie", p.tipo, p.maniobra || "-", p.giro || "-", p.salida || "-",
           p.calle || "-", `${p.metros} m`, p.nombre || "-", p.ciclovia != null ? `ciclovía ${p.ciclovia} %` : "-", p.extra || "-"].join(" | ")).join("\n");
-        const json = await preguntar(`Sos la voz de navegación de Pedalito (como Waze) para una salida cultural en EcoBici por Buenos Aires.
+        const json = await preguntar(`Sos el navegador de Pedalito (como Waze) para una salida cultural en EcoBici por Buenos Aires.
 Reescribí cada paso como una instrucción corta (máximo 90 caracteres), en español rioplatense, clara para leer o escuchar en movimiento.
 Anticipá la distancia ("En 120 m, doblá a la izquierda en Callao"). Usá SOLO las calles y nombres de la tabla: no inventes calles, lugares ni estaciones.
 A pie: caminá y cruzá con cuidado en las esquinas. En bici: pedaleá, usá la ciclovía cuando el dato lo diga y respetá los semáforos.
@@ -143,18 +150,6 @@ Respondé en JSON: {"textos":["…"]} con exactamente ${lote.length} textos, en 
     }));
     return mejorados > 0;
   }
-
-  // ---------- Voz ----------
-  function hablar(texto) {
-    try {
-      if (!("speechSynthesis" in window)) return;
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(texto);
-      u.lang = "es-AR"; u.rate = 1.02;
-      speechSynthesis.speak(u);
-    } catch { /* sin voz disponible */ }
-  }
-  const callar = () => { try { speechSynthesis.cancel(); } catch { /* nada */ } };
 
   // ---------- Confeti ----------
   const Confeti = (() => {
@@ -214,5 +209,5 @@ Respondé en JSON: {"textos":["…"]} con exactamente ${lote.length} textos, en 
     temporizadores.push(setTimeout(() => { el.hidden = true; Confeti.parar(); }, Confeti.DURACION + 700));
   }
 
-  window.PedalitoGuia = { construir, mejorarConIA, textoBase, icono, hablar, callar, celebrar, Confeti, aMetros };
+  window.PedalitoGuia = { construir, mejorarConIA, textoBase, icono, celebrar, Confeti, aMetros };
 })();

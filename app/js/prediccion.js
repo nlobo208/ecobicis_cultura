@@ -52,6 +52,14 @@
              nivelBicis: nivel(bicis), nivelAnclajes: nivel(anclajes) };
   }
 
+  /** Datos reales de ahora (js/disponibilidad.js) si la API está conectada; si no, null y se usa la estimación. */
+  const enVivo = numero => window.PedalitoDisponibilidad?.de(numero) || null;
+  /** Puntaje 0 a 1 de una estación para `clave` ("bicis" o "anclajes"): real si hay datos en vivo, estimado si no. */
+  function valor(e, clave) {
+    const v = e.vivo;
+    return v ? Math.min(1, (clave === "bicis" ? v.bicis : v.anclajes) / 6) : e[clave];   // 6 o más unidades ya es muy buena opción
+  }
+
   const distKm = (a, b) => {
     const r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lon - a.lon);
     return 12742 * Math.asin(Math.sqrt(Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2));
@@ -62,11 +70,12 @@
    * clave "bicis" → para retirar; "anclajes" → para devolver (con `minutos` de viaje).
    */
   function estacionesCerca(punto, clave, fecha = new Date(), minutos = 0, radioKm = 0.7, n = 3) {
-    // Puntaje: probabilidad menos una penalidad por distancia (caminar hasta la estación también cuesta)
-    const puntaje = e => e[clave] - 0.4 * e.distM / (radioKm * 1000);
+    // Puntaje: disponibilidad (real si hay API, estimada si no) menos una penalidad por distancia (caminar hasta la estación también cuesta)
+    const puntaje = e => valor(e, clave) - 0.4 * e.distM / (radioKm * 1000);
     return MODELO.estaciones
-      .map(e => ({ ...predecirEstacion(e.numero, fecha, minutos), distM: Math.round(distKm(punto, e) * 1000) }))
+      .map(e => ({ ...predecirEstacion(e.numero, fecha, minutos), vivo: enVivo(e.numero), distM: Math.round(distKm(punto, e) * 1000) }))
       .filter(e => e.distM <= radioKm * 1000)
+      .filter(e => !e.vivo || (clave === "bicis" ? e.vivo.bicis : e.vivo.anclajes) > 0)   // con datos reales, una estación en cero no sirve
       .sort((a, b) => puntaje(b) - puntaje(a))
       .slice(0, n);
   }
@@ -77,5 +86,5 @@
     return MODELO.corredores.filter(c => set.has(c.desde) && set.has(c.hasta));
   }
 
-  window.PedalitoPrediccion = { predecirEstacion, estacionesCerca, corredoresEntre, carga, distKm, existe: n => porNumero.has(n) };
+  window.PedalitoPrediccion = { predecirEstacion, enVivo, estacionesCerca, corredoresEntre, carga, distKm, existe: n => porNumero.has(n) };
 })();

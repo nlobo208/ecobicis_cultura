@@ -90,7 +90,7 @@ function mostrar() {
   $("#atras").hidden = ["bienvenida", "lugar"].includes(pantalla);   // en el detalle la flecha va sobre la foto
   $$("#nav a").forEach(a => a.classList.toggle("activo", a.dataset.tab === pantalla));
   window.scrollTo(0, 0);
-  if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apagan el GPS y la voz
+  if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apaga el GPS
 
   ({ intereses: pintarIntereses, ubicacion: pintarUbicacion, inicio: pintarInicio, explorar: pintarExplorar,
      lugar: () => pintarLugar(param), planificar: pintarPlanificar, recorrido: armarRecorrido,
@@ -178,13 +178,15 @@ function pintarUbicacion() {
   if (!window.maplibregl) return;
   if (!mapaUbi) {
     mapaUbi = new maplibregl.Map({ container: "mapa-ubicacion", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
-      zoom: 13.5, attributionControl: { compact: true } });
+      zoom: 14.5, attributionControl: false });
+    mapaUbi.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaUbicacion.visiblePx()) } });
     mapaUbi.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    mapaUbi.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
     marcaUbi = new maplibregl.Marker({ color: "#203ae9", draggable: true }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaUbi);
     marcaUbi.on("dragend", () => { const p = marcaUbi.getLngLat(); elegirPunto({ lat: p.lat, lon: p.lng }); });
     mapaUbi.on("click", e => elegirPunto({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
   } else {
-    mapaUbi.resize();
+    mapaUbi.resize(); ajustarMapa(mapaUbi, hojaUbicacion, false);
   }
   // Si ya había uno elegido en esta sesión, queda preseleccionado para poder cambiarlo
   if (origenElegido) { mapaUbi.jumpTo({ center: [ORIGEN.lon, ORIGEN.lat] }); elegirPunto(ORIGEN, ORIGEN.nombre); }
@@ -232,6 +234,8 @@ $("#confirmar-origen").addEventListener("click", () => {
 
 // ---------- 03 · Home ----------
 let mapaHome;
+// (hacerDeslizable y ajustarMapa son function declarations: se pueden usar desde acá)
+const hojaUbicacion = hacerDeslizable($("#hoja-ubicacion"), () => ajustarMapa(mapaUbi, hojaUbicacion));
 function pintarInicio() {
   const h = new Date().getHours();
   const saludo = h < 13 ? "Buen día" : h < 20 ? "Buenas tardes" : "Buenas noches";
@@ -320,25 +324,84 @@ function tarjetaLugarHTML({ lugar, etiqueta, titulo, metas, textoSinImagen }) {
 }
 
 // ---------- 03 · Mapa del Home ----------
-// Mapa en vivo: se arrastra y se hace zoom. Muestra tu punto de salida y las estaciones EcoBici vigentes, coloreadas
-// por la probabilidad estimada de que haya bicis ahora (ver js/prediccion.js):
-// 0 a 25 % rojo · 26 a 69 % naranja · 70 a 100 % amarillo.
+// Mapa en vivo: se arrastra y se hace zoom. Muestra tu punto de salida y las estaciones EcoBici vigentes.
+// Cada estación es un círculo con la cantidad de bicis disponibles AHORA (js/disponibilidad.js, API de EcoBici):
+//   negro = ninguna · rojo 1 a 35 % · naranja 36 a 70 % · amarillo 71 a 100 % (del total de lugares de la estación).
+// Sin datos en vivo (sin claves o sin conexión) se muestra un círculo sin número, con el color de la estimación
+// de js/prediccion.js, y el panel lo aclara.
 let marcaHome;
-const COLOR_NIVEL = { alta: "#ffd400", media: "#f76c09", baja: "#e5202e" };
-function estacionesGeoJSON() {
-  const ahora = new Date();
-  return { type: "FeatureCollection", features: ESTACIONES.map(e => {
-    const p = PRED.predecirEstacion(e.numero, ahora, 0);
-    return { type: "Feature", geometry: { type: "Point", coordinates: [e.lon, e.lat] },
-      properties: { nombre: e.nombre, nivel: p.nivelBicis, pct: pct(p.bicis) } };
-  }) };
+const DISP = window.PedalitoDisponibilidad;
+const COLOR_NIVEL = { alta: "#ffd400", media: "#f76c09", baja: "#e5202e" };    // colores de la ESTIMACIÓN (sin datos en vivo)
+const pinesEstaciones = new Map();                                              // número de estación → { marker, el }
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+/** Texto corto de disponibilidad de una estación: real ("7 bicis ahora") o estimado ("bicis: media (estimado)"). */
+function dispTexto(est, clave) {
+  const v = DISP.de(est.numero);
+  if (v) {
+    const n = clave === "bicis" ? v.bicis : v.anclajes;
+    return n === 0 ? (clave === "bicis" ? "sin bicis ahora" : "sin anclajes libres ahora")
+      : clave === "bicis" ? `${plural(n, "bici", "bicis")} ahora` : `${plural(n, "anclaje libre", "anclajes libres")} ahora`;
+  }
+  return `${clave === "bicis" ? "bicis" : "anclajes libres"}: ${clave === "bicis" ? est.nivelBicis : est.nivelAnclajes} (estimado)`;
 }
+
+/** Aplica número y color a un círculo de estación. `clave`: "bicis" (retirar) o "anclajes" (dejar la bici). */
+function pintarPin(el, numero, clave, sinDatos = "") {
+  const v = DISP.de(numero);
+  el.className = "est-pin";
+  if (v) {
+    const n = clave === "bicis" ? v.bicis : v.anclajes, nv = DISP.nivelDe(n, v.capacidad);
+    el.textContent = n; el.style.background = nv.color; el.classList.toggle("claro", nv.claro);
+    el.setAttribute("aria-label", `${dispTexto({ numero }, clave)}`);
+    return true;
+  }
+  el.textContent = sinDatos; el.style.background = ""; el.classList.add("estimado");
+  return false;
+}
+
+function popupEstacion(e) {
+  const v = DISP.de(e.numero);
+  if (v) {
+    return `<strong>${esc(e.nombre)}</strong><br>Bicis ahora: ${v.bicis} de ${v.capacidad}<br>Anclajes libres: ${v.anclajes}` +
+      `${v.deshabilitadas ? `<br>Bicis fuera de servicio: ${v.deshabilitadas}` : ""}<br><small>Actualizado ${esc(DISP.hora(DISP.estado.actualizado))}</small>`;
+  }
+  const p = PRED.predecirEstacion(e.numero, new Date(), 0);
+  return `<strong>${esc(e.nombre)}</strong><br>Bicis: ${esc(p.nivelBicis)} (${esc(pct(p.bicis))}) · estimado<br><small>Sin datos en vivo</small>`;
+}
+
+/** Crea o actualiza los círculos de las 110 estaciones sobre el mapa del Home. */
+function pintarEstacionesHome() {
+  if (!mapaHome || !window.maplibregl) return;
+  ESTACIONES.forEach(e => {
+    let pin = pinesEstaciones.get(e.numero);
+    if (!pin) {
+      const el = document.createElement("button"); el.type = "button";
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([e.lon, e.lat]).addTo(mapaHome);
+      el.addEventListener("click", ev => {
+        ev.stopPropagation();
+        new maplibregl.Popup({ offset: 18 }).setLngLat([e.lon, e.lat]).setHTML(popupEstacion(e)).addTo(mapaHome);
+      });
+      pin = { marker, el }; pinesEstaciones.set(e.numero, pin);
+    }
+    if (!pintarPin(pin.el, e.numero, "bicis")) {                      // estimación: color según la probabilidad de bicis
+      const p = PRED.predecirEstacion(e.numero, new Date(), 0);
+      pin.el.style.background = COLOR_NIVEL[p.nivelBicis];
+      pin.el.setAttribute("aria-label", `${e.nombre}: bicis ${p.nivelBicis} (estimado)`);
+    }
+  });
+  const nota = $("#nota-bicis");
+  nota.textContent = DISP.estado.enVivo
+    ? `El número es la cantidad de bicis disponibles ahora (actualizado ${DISP.hora(DISP.estado.actualizado)}). El color, cuánto de la estación está ocupado. Tocá una estación para ver el detalle.`
+    : "Sin datos en vivo por ahora: los colores son una estimación según el día y la hora. Tocá una estación para ver el detalle.";
+}
+
 function pintarMapaHome() {
   if (!window.maplibregl) return;
   if (mapaHome) {                                   // volvió a Home: recentrar en el punto de salida y refrescar estaciones
     mapaHome.resize(); mapaHome.jumpTo({ center: [ORIGEN.lon, ORIGEN.lat], zoom: 14.5, padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaInicio.visiblePx()) } });
     marcaHome.setLngLat([ORIGEN.lon, ORIGEN.lat]);
-    mapaHome.getSource("estaciones")?.setData(estacionesGeoJSON());
+    pintarEstacionesHome();
     return;
   }
   mapaHome = new maplibregl.Map({ container: "mapa-home", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
@@ -349,19 +412,7 @@ function pintarMapaHome() {
   const punto = document.createElement("div");
   punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#203ae9;border:3px solid #fff;box-shadow:0 0 0 10px rgba(32,58,233,.25)";
   marcaHome = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaHome);
-  mapaHome.once("style.load", () => {
-    mapaHome.addSource("estaciones", { type: "geojson", data: estacionesGeoJSON() });
-    mapaHome.addLayer({ id: "estaciones", type: "circle", source: "estaciones", paint: {
-      "circle-radius": 8, "circle-stroke-width": 2.5, "circle-stroke-color": "#ffffff",
-      "circle-color": ["match", ["get", "nivel"], "alta", COLOR_NIVEL.alta, "media", COLOR_NIVEL.media, COLOR_NIVEL.baja] } });
-  });
-  mapaHome.on("click", "estaciones", e => {
-    const f = e.features[0].properties;
-    new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat)
-      .setHTML(`<strong>${esc(f.nombre)}</strong><br>Bicis: ${esc(f.nivel)} (${esc(f.pct)}) · estimado`).addTo(mapaHome);
-  });
-  mapaHome.on("mouseenter", "estaciones", () => { mapaHome.getCanvas().style.cursor = "pointer"; });
-  mapaHome.on("mouseleave", "estaciones", () => { mapaHome.getCanvas().style.cursor = ""; });
+  pintarEstacionesHome();
 }
 const hojaInicio = hacerDeslizable($("#hoja-inicio"), () => ajustarMapa(mapaHome, hojaInicio));
 
@@ -762,11 +813,11 @@ ${elegidos.length ? `LUGARES OBLIGATORIOS (la persona los eligió, tienen que es
 ${plan.hasta ? `La persona quiere TERMINAR en "${plan.hasta.nombre}": ordená los lugares para que el último quede de camino hacia ahí.` : ""}
 LUGARES (id · nombre · categoría · km desde la salida · horario):
 ${lista.map(l => `${l.id} · ${l.nombre} · ${l.categoria} · ${fmtKm(desdeOrigen(l))} · ${l.horario ? HOR.resumen(l.horario) : "sin dato"}`).join("\n")}
-ESTACIONES PARA RETIRAR (número · nombre · distancia · probabilidad de bicis): ${retiros.map(e => `${lineaEstacion(e)} · ${e.nivelBicis}`).join(" | ")}
-ESTACIONES PARA DEVOLVER, por lugar (número · nombre · distancia al lugar · probabilidad de anclajes libres):
-${lista.map(l => `lugar ${l.id}: ${devoluciones[l.id].map(e => `${lineaEstacion(e)} · ${e.nivelAnclajes}`).join(" | ") || "ninguna"}`).join("\n")}
+ESTACIONES PARA RETIRAR (número · nombre · distancia · bicis disponibles ${DISP.estado.enVivo ? "AHORA" : "(estimado)"}): ${retiros.map(e => `${lineaEstacion(e)} · ${dispTexto(e, "bicis")}`).join(" | ")}
+ESTACIONES PARA DEVOLVER, por lugar (número · nombre · distancia al lugar · anclajes libres ${DISP.estado.enVivo ? "AHORA" : "(estimado)"}):
+${lista.map(l => `lugar ${l.id}: ${devoluciones[l.id].map(e => `${lineaEstacion(e)} · ${dispTexto(e, "anclajes")}`).join(" | ") || "ninguna"}`).join("\n")}
 CORREDORES MÁS USADOS en 2024 entre estas estaciones: ${corredores.map(c => `${nom(c.desde)} → ${nom(c.hasta)} (${c.viajes} viajes)`).join("; ") || "sin datos"}.
-Reglas: elegí SOLO números de las listas, no inventes lugares ni estaciones; preferí estaciones con probabilidad alta pero cercanas (caminar hasta la estación también cuenta) y los corredores usados; que el orden evite volver sobre tus pasos.
+Reglas: elegí SOLO números de las listas, no inventes lugares ni estaciones; preferí estaciones con más bicis (o más anclajes libres para devolver) pero cercanas (caminar hasta la estación también cuenta) y los corredores usados; que el orden evite volver sobre tus pasos.
 Respondé en JSON: {"ids":[ids en orden de visita],"retiro":número,"devolucion":{"idLugar":númeroEstación},"texto":"2 a 3 oraciones cercanas que justifiquen el recorrido"}`);
     ids = [...new Set((json.ids || []).map(Number).filter(id => lista.some(l => l.id === id)))];
     if (!ids.length) throw new Error("sin lugares válidos");
@@ -822,6 +873,9 @@ function mejorPorReglas(rutas) {
   return rutas.reduce((m, r, i) => puntaje(r) < puntaje(rutas[m]) ? i : m, 0);
 }
 
+/** Con datos en vivo, una estación sin bicis no sirve para retirar (sin datos en vivo no se puede saber: se asume que sí). */
+const hayBicis = est => { const v = DISP.de(est.numero); return !v || v.bicis > 0; };
+
 function armarTramos(paradas, retiro, devol, ahora, hasta) {
   const tramos = [];
   const punto = (p, nombre) => ({ lat: p.lat, lon: p.lon, nombre: nombre || p.nombre });
@@ -840,7 +894,7 @@ function armarTramos(paradas, retiro, devol, ahora, hasta) {
     // Salida: el retiro elegido (primer tramo), la estación donde dejé la bici si me queda a mano (≤ 250 m),
     // y si no, la mejor estación cerca de donde estoy (no tiene sentido volver sobre mis pasos).
     const salida = k === 0 ? retiro
-      : (estacionActual && metros(actual, estacionActual) <= 250 ? estacionActual
+      : (estacionActual && metros(actual, estacionActual) <= 250 && hayBicis(estacionActual) ? estacionActual
         : PRED.estacionesCerca(actual, "bicis", ahora, 0, RADIO_ESTACION_KM, 1)[0]);
     if (!salida || salida.numero === dev.numero) { pie(actual, meta, "lugar"); actual = meta; estacionActual = null; return; }
     const sP = punto(salida, `estación ${salida.nombre}`), dP = punto(dev, `estación ${dev.nombre}`);
@@ -853,7 +907,7 @@ function armarTramos(paradas, retiro, devol, ahora, hasta) {
   // "Hasta" (opcional): el recorrido termina ahí, caminando si queda cerca o con otro tramo en bici
   if (hasta) {
     const meta = punto(hasta);
-    const salida = estacionActual && metros(actual, estacionActual) <= 250 ? estacionActual
+    const salida = estacionActual && metros(actual, estacionActual) <= 250 && hayBicis(estacionActual) ? estacionActual
       : PRED.estacionesCerca(actual, "bicis", ahora, 0, RADIO_ESTACION_KM, 1)[0];
     const llegada = PRED.estacionesCerca(meta, "anclajes", ahora, Math.round(metros(actual, meta) / 1000 / VELOCIDAD_KMH * 60), RADIO_ESTACION_KM, 1)[0];
     if (metros(actual, meta) <= CAMINATA_MAX_M || !salida || !llegada || salida.numero === llegada.numero) {
@@ -869,10 +923,11 @@ function armarTramos(paradas, retiro, devol, ahora, hasta) {
 }
 
 let mapa, marcaYo, marcaPaso;
+const pinesRecorrido = [];                 // círculos de estaciones del mapa del recorrido (se actualizan con los datos en vivo)
 const GUIA = window.PedalitoGuia;
 // Estado de la guía paso a paso. `pasos` sale de GUIA.construir; `i` es el paso que toca ahora.
 const guia = { pasos: [], i: 0, activa: false, watch: null, tramos: null, ia: false, restante: null, sinGPS: false, hayFix: false,
-  voz: estado.voz !== false, ultimoArrastre: 0 };
+  ultimoArrastre: 0 };
 const hojaRecorrido = hacerDeslizable($("#hoja-recorrido"), () => ajustarMapa(mapa, hojaRecorrido));
 
 function pintarRecorrido() {
@@ -897,7 +952,8 @@ function pintarRecorrido() {
     }
     return `<div class="tarjeta-apilada celeste"><strong>${i + 1} · Pedaleá hasta la ${esc(t.hasta.nombre)}</strong>
       <span>${ok ? `${fmtM(x.metros)} en bici · ${minutosDe(x.segundos)} min · ${x.pctCiclovia} % por ciclovía` : "Trazado no disponible"}</span>
-      <span>Retiro: ${esc(t.retiro.nombre)} (bicis: ${t.retiro.nivelBicis}) · Devolución: ${esc(t.devolucion.nombre)} (anclajes libres: ${t.devolucion.nivelAnclajes})</span></div>`;
+      <span data-disp="retiro" data-i="${i}">Retiro: ${esc(t.retiro.nombre)} · ${esc(dispTexto(t.retiro, "bicis"))}</span>
+      <span data-disp="devolucion" data-i="${i}">Devolución: ${esc(t.devolucion.nombre)} · ${esc(dispTexto(t.devolucion, "anclajes"))}</span></div>`;
   });
   $("#paradas").innerHTML = resumen.join("") || `<div class="tarjeta-apilada noche"><strong>Todo a pie</strong><span>Los lugares quedan a menos de ${CAMINATA_MAX_M} m.</span></div>`;
 
@@ -910,7 +966,7 @@ function pintarRecorrido() {
 function pintarMapaRecorrido(validos, elegida) {
   if (!window.maplibregl) return;
   if (mapa) mapa.remove();
-  marcaYo = null;
+  marcaYo = null; pinesRecorrido.length = 0;
   const coords = validos.flatMap(t => elegida(t).coords);
   const extra = [ORIGEN, ...plan.ids.map(porId)];                       // por si todo el recorrido es a pie y sin trazado
   const puntos = [...coords.map(c => ({ lon: c[0], lat: c[1] })), ...extra];
@@ -943,7 +999,22 @@ function pintarMapaRecorrido(validos, elegida) {
   const origenPin = document.createElement("div");
   origenPin.className = "pin"; origenPin.style.cssText += ";width:16px;height:16px;background:#092957";
   new maplibregl.Marker({ element: origenPin }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapa);
-  validos.filter(t => t.modo === "bici").forEach(t => { marca(t.desde, "E", "#203ae9"); marca(t.hasta, "E", "#00baf1"); });
+  // Etapa 1 (retirar): círculo con las bicis disponibles ahora. Etapa 2 (dejar la bici): círculo con los anclajes libres ahora.
+  const pinEstacion = (est, p, clave, rol) => {
+    const el = document.createElement("button"); el.type = "button";
+    if (!pintarPin(el, est.numero, clave, "E")) el.style.background = clave === "bicis" ? "#203ae9" : "#00baf1";   // sin datos en vivo: letra E
+    el.classList.remove("estimado"); pinesRecorrido.push({ el, est, clave });
+    new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat])
+      .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(`<strong>${rol}: ${esc(est.nombre)}</strong><br>${esc(dispTexto(est, clave))}`)).addTo(mapa);
+  };
+  // Resto de las estaciones EcoBici (más chicas, debajo de las del recorrido): su estado de ahora, para elegir otra si hace falta
+  const delRecorrido = new Set(validos.filter(t => t.modo === "bici").flatMap(t => [t.retiro.numero, t.devolucion.numero]));
+  ESTACIONES.filter(e => !delRecorrido.has(e.numero)).forEach(e => {
+    const el = document.createElement("button"); el.type = "button";
+    pintarPin(el, e.numero, "bicis"); el.classList.add("fondo"); pinesRecorrido.push({ el, est: e, clave: "bicis", fondo: true });
+    new maplibregl.Marker({ element: el }).setLngLat([e.lon, e.lat]).setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(popupEstacion(e))).addTo(mapa);
+  });
+  validos.filter(t => t.modo === "bici").forEach(t => { pinEstacion(t.retiro, t.desde, "bicis", "Retirar la bici"); pinEstacion(t.devolucion, t.hasta, "anclajes", "Dejar la bici"); });
   plan.ids.map(porId).forEach((l, i) => marca(l, i + 1, "#f90083"));
   if (plan.hasta) marca({ lat: plan.hasta.lat, lon: plan.hasta.lon, nombre: `Final: ${plan.hasta.nombre}` }, "★", "#092957");
   // Anillo que marca el paso actual
@@ -976,15 +1047,22 @@ function etiquetaBoton() {
 function pintarPaso() {
   const p = guia.pasos[guia.i]; if (!p) return;
   const llegada = p.tipo === "lugar" || p.tipo === "final";
-  $("#paso-icono").textContent = GUIA.icono(p);
-  $("#paso-icono").classList.toggle("llegada", llegada);
+  // Etapa 1 (retirar la bici): el círculo muestra cuántas bicis hay ahora. Etapa 2 (dejarla): cuántos anclajes libres hay.
+  const esEstacion = p.tipo === "retiro" || p.tipo === "devolucion", clave = p.tipo === "retiro" ? "bicis" : "anclajes";
+  const v = esEstacion && p.est ? DISP.de(p.est.numero) : null, icono = $("#paso-icono");
+  icono.classList.toggle("llegada", llegada);
+  if (v) {
+    const n = clave === "bicis" ? v.bicis : v.anclajes, nv = DISP.nivelDe(n, v.capacidad);
+    icono.textContent = n; icono.style.background = nv.color; icono.classList.add("cantidad"); icono.classList.toggle("claro", nv.claro);
+  } else {
+    icono.textContent = GUIA.icono(p); icono.style.background = ""; icono.classList.remove("cantidad", "claro");
+  }
   $("#paso-etiqueta").textContent = guia.activa ? `Paso ${guia.i + 1} de ${guia.pasos.length}` : "Siguiente paso";
   $("#paso-texto").textContent = p.texto;
   const distancia = guia.activa && guia.restante != null ? `faltan ${fmtM(guia.restante)}` : (p.metros ? fmtM(p.metros) : "");
-  $("#paso-meta").textContent = [p.modo === "bici" ? "En bici" : "A pie", distancia, p.tipo === "retiro" || p.tipo === "devolucion" ? p.extra : "",
+  $("#paso-meta").textContent = [p.modo === "bici" ? "En bici" : "A pie", distancia, esEstacion && p.est ? dispTexto(p.est, clave) : "",
     guia.ia ? "Guía por IA" : "Guía automática", guia.activa && guia.sinGPS ? "Sin GPS: avanzá con el botón" : ""].filter(Boolean).join(" · ");
   $("#iniciar").firstChild.textContent = `${etiquetaBoton()} `;
-  $("#voz").setAttribute("aria-pressed", guia.voz);
 }
 /** Lleva el anillo (y, si ya arrancó la guía sin GPS, la cámara) al punto del paso actual. */
 function centrarPaso(mover = true) {
@@ -993,8 +1071,6 @@ function centrarPaso(mover = true) {
   marcaPaso.setLngLat(p.punto);
   if (mover && guia.activa && !guia.hayFix) mapa.easeTo({ center: p.punto, zoom: 16.8, duration: 700 });
 }
-const hablarPaso = () => { if (guia.voz && guia.activa && guia.pasos[guia.i]) GUIA.hablar(guia.pasos[guia.i].texto); };
-
 function celebrarLlegada(p) {
   if (p.celebrado) return;
   p.celebrado = true;
@@ -1006,7 +1082,7 @@ function avanzar(manual) {
   if (guia.i >= guia.pasos.length - 1) return;
   guia.i++; guia.restante = null;
   const p = guia.pasos[guia.i];
-  pintarPaso(); centrarPaso(); hablarPaso();
+  pintarPaso(); centrarPaso();
   if (manual && p.celebra) celebrarLlegada(p);
 }
 
@@ -1035,10 +1111,10 @@ function seguirGPS() {
   }, () => { guia.sinGPS = true; pintarPaso(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 }
 
-/** Detiene el GPS y la voz (al salir de la pantalla o al terminar). La guía queda en el paso donde estaba. */
+/** Detiene el GPS (al salir de la pantalla o al terminar). La guía queda en el paso donde estaba. */
 function pausarGuia() {
   if (guia.watch !== null) { navigator.geolocation.clearWatch(guia.watch); guia.watch = null; }
-  GUIA.callar(); guia.activa = false;
+  guia.activa = false;
 }
 
 function iniciarGuia() {
@@ -1050,7 +1126,7 @@ function iniciarGuia() {
   guia.activa = true; guia.sinGPS = false;
   hojaRecorrido.poner(true);                               // el panel baja y queda solo el siguiente paso
   seguirGPS();
-  pintarPaso(); centrarPaso(); hablarPaso();
+  pintarPaso(); centrarPaso();
 }
 
 $("#iniciar").addEventListener("click", () => {
@@ -1058,11 +1134,6 @@ $("#iniciar").addEventListener("click", () => {
   if (!guia.activa) { iniciarGuia(); return; }
   if (guia.i >= guia.pasos.length - 1) { pausarGuia(); location.hash = "cierre"; return; }   // fin: va directo a calificar
   avanzar(true);
-});
-$("#voz").addEventListener("click", () => {
-  guia.voz = !guia.voz; estado.voz = guia.voz; guardarEstado();
-  if (guia.voz) hablarPaso(); else GUIA.callar();
-  pintarPaso();
 });
 
 // ---------- 08 · Cierre ----------
@@ -1088,7 +1159,7 @@ $("#guardar-volver").addEventListener("click", () => {
   u.ids.forEach(id => { if (!estado.visitados.includes(id)) estado.visitados.push(id); });
   estado.destinos = []; plan.hasta = null; plan.modo = "sorpresa";
   guardarEstado();
-  location.hash = "compartir";                  // el cierre del viaje termina en la rueda GIRA
+  location.hash = "compartir";                  // el cierre del viaje sigue en Compartir
 });
 
 // ---------- 09 · Perfil ----------
@@ -1106,35 +1177,47 @@ function pintarPerfil() {
   $("#mis-intereses").innerHTML = estado.intereses.map(i => `<span class="chip activo">${esc(i)}</span>`).join("");
 }
 
-// ---------- 10 · Compartir + rueda GIRA ----------
-const rayos = $("#rueda .rayos");
-for (let i = 0; i < 24; i++) {
-  const a = i * 15 * Math.PI / 180, linea = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  linea.setAttribute("x1", 100 + 14 * Math.cos(a)); linea.setAttribute("y1", 100 + 14 * Math.sin(a));
-  linea.setAttribute("x2", 100 + 82 * Math.cos(a)); linea.setAttribute("y2", 100 + 82 * Math.sin(a));
-  rayos.appendChild(linea);
-}
-const rueda = window.PedalitoRueda.iniciar({
-  rueda: $("#rueda"), boton: $("#gira"), salida: $("#salida-mensaje"), mensaje: $("#mensaje-dia")
-});
-
+// ---------- 10 · Compartir ----------
 function pintarCompartir() {
   const u = estado.ultimo;
   $("#compartir-km").textContent = u ? fmtKm(u.km).toUpperCase() : fmtKm(estado.km).toUpperCase();
   $("#compartir-ruta").textContent = u ? `por Buenos Aires · ${ORIGEN.nombre} → ${u.ids.map(id => porId(id).nombre).join(" → ")}` : "por Buenos Aires";
-  rueda.reiniciar();
 }
 // Cada opción comparte directamente; el botón de abajo cierra el recorrido y vuelve al inicio.
 const textoCompartir = () => `${$("#compartir-km").textContent} por Buenos Aires con Pedalito. ${$("#compartir-ruta").textContent}`;
 $$("#compartir [data-red]").forEach(b => b.addEventListener("click", async () => {
   const texto = textoCompartir(), red = b.dataset.red;
   if (red === "whatsapp") { window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener"); return; }
-  if (red === "comunidad") { aviso("La comunidad de Pedalito todavía no está disponible."); return; }
   try {                                              // Instagram Stories no se puede abrir con un link: se usa el menú de compartir del celular
     if (navigator.share) await navigator.share({ title: "Pedalito", text: texto });
     else { await navigator.clipboard.writeText(texto); aviso("Texto copiado: pegalo en tu historia de Instagram."); }
   } catch (e) { if (e?.name !== "AbortError") aviso("No pudimos compartir desde acá. Probá desde el celular."); }   // AbortError = la persona canceló
 }));
 $("#compartir-ya").addEventListener("click", () => { location.hash = "inicio"; });
+
+// ---------- Bicis y anclajes en vivo ----------
+// Cada vez que llegan datos nuevos (cada minuto) se actualizan los círculos del Home, los del mapa del recorrido,
+// las tarjetas de retiro y devolución y el paso de la guía que se está mostrando.
+function refrescarDisponibilidad() {
+  pintarEstacionesHome();
+  pinesRecorrido.forEach(({ el, est, clave, fondo }) => {
+    if (!pintarPin(el, est.numero, clave, fondo ? "" : "E")) {
+      if (fondo) { const p = PRED.predecirEstacion(est.numero, new Date(), 0); el.style.background = COLOR_NIVEL[p.nivelBicis]; }
+      else el.style.background = clave === "bicis" ? "#203ae9" : "#00baf1";
+    }
+    el.classList.remove("estimado"); el.classList.toggle("fondo", !!fondo);
+  });
+  if (plan.tramos) {
+    const tramos = plan.tramos.filter(t => t.modo !== "llegada");
+    $$("#paradas [data-disp]").forEach(s => {
+      const t = tramos[Number(s.dataset.i)]; if (!t) return;
+      s.textContent = s.dataset.disp === "retiro" ? `Retiro: ${t.retiro.nombre} · ${dispTexto(t.retiro, "bicis")}`
+        : `Devolución: ${t.devolucion.nombre} · ${dispTexto(t.devolucion, "anclajes")}`;
+    });
+    if (pantallaActual === "recorrido") pintarPaso();
+  }
+}
+DISP.alCambiar(refrescarDisponibilidad);
+DISP.iniciar();
 
 mostrar();

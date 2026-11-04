@@ -75,7 +75,6 @@ a { color: inherit; }
 .boton.contorno { background: transparent; color: var(--noche); border: 2px solid var(--azul); }
 .boton.contorno::after { display: none; }
 .boton.info { cursor: default; }
-.boton.chico { width: auto; margin: 10px auto 0; justify-content: center; padding: 0 28px; height: 48px; letter-spacing: .12em; }
 /* Botones y barra pegados abajo: columna de 430 px centrada, igual que .app */
 .boton.fijo, .botones-fijos, .nav {
   position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
@@ -190,20 +189,6 @@ a { color: inherit; }
 .ficha { position: relative; margin-top: -40px; padding: 26px var(--gutter) 0; border-radius: 28px 28px 0 0; background: var(--crema); display: flex; flex-direction: column; gap: 14px; }
 .etiqueta-rosa { align-self: flex-start; padding: 4px 12px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 
-/* ---------- Rueda GIRA ---------- */
-.rueda-wrap { display: flex; flex-direction: column; align-items: center; margin: 14px 0 6px; }
-.rueda { width: 168px; height: 168px; border-radius: 50%; cursor: pointer; will-change: transform; touch-action: manipulation; }
-.rueda svg { width: 100%; height: 100%; display: block; }
-.rueda .llanta { fill: none; stroke: var(--noche); stroke-width: 10; }
-.rueda .aro { fill: none; stroke: var(--azul); stroke-width: 2; }
-.rueda .rayos line { stroke: var(--rosa); stroke-width: 2; stroke-linecap: round; }
-.rueda .buje { fill: var(--noche); }
-.mensaje-dia { margin-top: 14px; padding: 14px 18px; border: 2px solid var(--azul); border-radius: 18px; text-align: center; animation: aparece .5s ease both; }
-.mensaje-dia[hidden] { display: none; }
-.mensaje-dia .etiqueta { display: block; margin-bottom: 4px; color: var(--azul); }
-.mensaje-dia p:last-child { font-weight: 600; }
-@keyframes aparece { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .mensaje-dia { animation: none; } }
 
 /* ---------- Estrellas ---------- */
 .calificacion { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 14px 20px; border: 2px solid var(--azul); border-radius: 18px; font-weight: 600; }
@@ -253,7 +238,10 @@ a { color: inherit; }
 .redondo.izq { left: var(--gutter); }
 
 /* ---------- Desde dónde salís ---------- */
-#ubicacion .mapa { height: 280px; }
+#ubicacion .hoja-scroll { display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; }
+#ubicacion h1 { margin: 0; }
+#ubicacion .sub, #ubicacion .nota { margin: 0; }
+#ubicacion .sugerencias { margin: 0; }
 .sugerencias { list-style: none; margin: -6px 0 0; padding: 4px; border: 1px solid var(--borde); border-radius: 18px; background: #fff; box-shadow: 0 6px 18px rgba(9, 41, 87, .1); }
 .sugerencias[hidden] { display: none; }
 .sugerencias button { width: 100%; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 14px; background: transparent; text-align: left; font: 600 14px "Inter", system-ui, sans-serif; color: var(--noche); cursor: pointer; }
@@ -333,10 +321,6 @@ a { color: inherit; }
 .paso-cuerpo .etiqueta { opacity: .75; }
 .paso-cuerpo strong { font-size: 17px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .paso-meta { font-size: 12px; font-weight: 600; opacity: .8; }
-.voz { flex: none; align-self: flex-start; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 252, 250, .14); color: var(--crema); cursor: pointer; }
-.voz svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.voz[aria-pressed="false"] .ondas { display: none; }
-.voz[aria-pressed="false"] { opacity: .6; }
 
 /* ---------- Cápsulas azules (leyenda del mapa y datos sueltos) ---------- */
 .capsulas { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -393,3 +377,19 @@ a { color: inherit; }
 .apiladas.foco .tarjeta-apilada { opacity: var(--o, 1); transition: transform .1s linear, opacity .15s linear; }
 #explorar #ver-mas { margin-top: 18px; }
 #compartir { padding-bottom: 190px; }       /* que el botón fijo no tape la última opción */
+
+/* ---------- Estaciones: círculo con el número de bicis (o de anclajes libres) y color según la ocupación ---------- */
+.est-pin {
+  width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%;
+  background: var(--azul); color: #fff; font: 700 13px/1 "Inter", system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(9, 41, 87, .35);
+}
+.est-pin.claro { color: var(--noche); }                         /* texto oscuro sobre el amarillo */
+.est-pin.estimado { width: 20px; height: 20px; opacity: .92; }   /* sin datos en vivo: círculo sin número */
+.est-pin .tipo { display: none; }
+.est-pin.fondo { width: 24px; height: 24px; border-width: 2px; font-size: 11px; opacity: .85; box-shadow: 0 1px 4px rgba(9, 41, 87, .3); }
+.leyenda-bicis { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.leyenda-bicis li { display: inline-flex; align-items: center; gap: 6px; }
+.leyenda-bicis i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(9, 41, 87, .25); }
+.paso-icono.cantidad { font-size: 22px; }
+.paso-icono.claro { color: var(--noche); }

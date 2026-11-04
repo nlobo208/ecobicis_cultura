@@ -9,7 +9,7 @@ if (-not (Test-Path $entrada)) { Write-Error "Falta .env en la raíz (copiá .en
 
 # Variables que NUNCA van a env.js: env.js lo descarga cualquiera que abra la app.
 # Estas solo las lee el servidor (la función de Netlify).
-$soloServidor = @("GROQ_API_KEY", "GROQ_MODEL")
+$soloServidor = @("GROQ_API_KEY", "GROQ_MODEL", "ECOBICI_CLIENT_ID", "ECOBICI_CLIENT_SECRET")
 
 $valores = [ordered]@{}
 foreach ($linea in Get-Content $entrada -Encoding UTF8) {

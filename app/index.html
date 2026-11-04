@@ -62,19 +62,23 @@
   </section>
 
   <!-- 02b · Desde dónde salís (se pregunta en cada sesión: las recomendaciones dependen de dónde estás ahora) -->
-  <section class="pantalla" id="ubicacion">
-    <div class="contenido bajo">
-      <h1>¿Desde dónde salís?</h1>
-      <p class="sub">Así te mostramos lugares y estaciones realmente cerca tuyo, ahora.</p>
-      <button class="boton contorno" id="usar-ubicacion" type="button">Usar mi ubicación actual <span aria-hidden="true">◎</span></button>
-      <label class="campo-texto">O buscá una estación o un lugar
-        <input id="buscar-origen" type="search" placeholder="⌕ Plaza Italia, Obelisco, MALBA…" autocomplete="off">
-      </label>
-      <ul class="sugerencias" id="sugerencias" hidden></ul>
-      <div class="mapa" id="mapa-ubicacion" aria-label="Mapa para elegir tu punto de salida"></div>
-      <p class="nota" id="origen-aviso">Tocá el mapa o arrastrá el punto para ajustar.</p>
+  <!-- Mismo formato que Home y Explorar: mapa de fondo y panel blanco que sube hasta la mitad de la pantalla -->
+  <section class="pantalla con-hoja" id="ubicacion">
+    <div class="mapa-fondo" id="mapa-ubicacion" aria-label="Mapa para elegir tu punto de salida"></div>
+    <div class="hoja-desliz" id="hoja-ubicacion" data-abierta="55" data-cerrada="30">
+      <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
+      <div class="hoja-scroll">
+        <h1>¿Desde dónde salís?</h1>
+        <p class="sub">Así te mostramos lugares y estaciones realmente cerca tuyo, ahora.</p>
+        <button class="boton contorno" id="usar-ubicacion" type="button">Usar mi ubicación actual <span aria-hidden="true">◎</span></button>
+        <label class="campo-texto">O buscá una estación o un lugar
+          <input id="buscar-origen" type="search" placeholder="⌕ Plaza Italia, Obelisco, MALBA…" autocomplete="off">
+        </label>
+        <ul class="sugerencias" id="sugerencias" hidden></ul>
+        <p class="nota" id="origen-aviso">Tocá el mapa o arrastrá el punto para ajustar.</p>
+        <button class="boton" id="confirmar-origen" disabled>Salgo desde acá <span aria-hidden="true">→</span></button>
+      </div>
     </div>
-    <button class="boton fijo" id="confirmar-origen" disabled>Salgo desde acá <span aria-hidden="true">→</span></button>
   </section>
 
   <!-- 03 · Home -->
@@ -90,7 +94,13 @@
           <p class="sub">¿Qué recorremos hoy?</p>
           <a class="pill-origen" href="#ubicacion">⌖ <span id="origen-nombre"></span> · Cambiar</a>
           <p class="clima" id="clima">Clima…</p>
-          <p class="nota">Tocá una estación del mapa para ver la probabilidad de bicis.</p>
+          <p class="nota" id="nota-bicis">Cargando las bicis disponibles…</p>
+          <ul class="leyenda-bicis" id="leyenda-bicis" aria-label="Colores de las estaciones">
+            <li><i style="background:#111418"></i>Sin bicis</li>
+            <li><i style="background:#e5202e"></i>1 a 35 %</li>
+            <li><i style="background:#f76c09"></i>36 a 70 %</li>
+            <li><i style="background:#ffd400"></i>71 a 100 %</li>
+          </ul>
         </div>
 
         <h2>Últimas fechas disponibles</h2>
@@ -100,7 +110,7 @@
         <div class="carrusel" id="para-vos"></div>
         <p class="nota" id="para-vos-origen"></p>
 
-        <h2>Tendencias · últimos 7 días</h2>
+        <h2>Más visitados por usuarios Pedalito · 7 días</h2>
         <div class="carrusel" id="tendencias"></div>
         <p class="nota" id="tendencias-nota"></p>
       </div>
@@ -183,9 +193,6 @@
             <strong id="paso-texto">Armando tu recorrido…</strong>
             <span class="paso-meta" id="paso-meta"></span>
           </div>
-          <button class="voz" id="voz" type="button" aria-pressed="true" aria-label="Voz de la guía">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path class="ondas" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></svg>
-          </button>
           </div>
           <button class="boton compacto" id="iniciar" disabled>Ir a retirar la bici <span aria-hidden="true">→</span></button>
         </div>
@@ -196,6 +203,12 @@
           <span class="capsula"><i class="muestra pie"></i>Caminando</span>
           <span class="capsula"><i class="muestra cicl"></i>Ciclovías</span>
         </div>
+        <ul class="leyenda-bicis" aria-label="Colores de las estaciones EcoBici">
+          <li><i style="background:#111418"></i>Sin bicis</li>
+          <li><i style="background:#e5202e"></i>1 a 35 %</li>
+          <li><i style="background:#f76c09"></i>36 a 70 %</li>
+          <li><i style="background:#ffd400"></i>71 a 100 %</li>
+        </ul>
         <p class="nota" id="propuesta-texto"></p>
         <div class="apiladas pasos" id="paradas"></div>
       </div>
@@ -237,7 +250,7 @@
     </div>
   </section>
 
-  <!-- 10 · Compartir (con la rueda GIRA) -->
+  <!-- 10 · Compartir -->
   <section class="pantalla" id="compartir">
     <div class="contenido">
       <h1>Compartí tu salida</h1>
@@ -248,26 +261,9 @@
         <span id="compartir-ruta"></span>
       </div>
 
-      <div class="rueda-wrap">
-        <div class="rueda" id="rueda" role="button" tabindex="0" aria-label="Girar la rueda para ver el mensaje del día">
-          <svg viewBox="0 0 200 200" aria-hidden="true">
-            <circle cx="100" cy="100" r="94" class="llanta"/>
-            <circle cx="100" cy="100" r="82" class="aro"/>
-            <g class="rayos"></g>
-            <circle cx="100" cy="100" r="14" class="buje"/>
-          </svg>
-        </div>
-        <button class="boton chico" id="gira" type="button">GIRA</button>
-        <div class="mensaje-dia" id="salida-mensaje" hidden>
-          <p class="etiqueta">Mensaje del día</p>
-          <p id="mensaje-dia"></p>
-        </div>
-      </div>
-
       <h2>¿Dónde querés compartirlo?</h2>
       <button class="fila-opcion" data-red="instagram">Instagram Stories <span aria-hidden="true">→</span></button>
       <button class="fila-opcion" data-red="whatsapp">WhatsApp <span aria-hidden="true">→</span></button>
-      <button class="fila-opcion" data-red="comunidad">Comunidad Pedalito <span aria-hidden="true">→</span></button>
     </div>
     <button class="boton fijo" id="compartir-ya">Finalizar <span aria-hidden="true">→</span></button>
   </section>
@@ -309,11 +305,11 @@
 <script src="data/ciclovias.js"></script>
 <script src="data/actividades.js"></script>
 <script src="js/horarios.js"></script>
+<script src="js/disponibilidad.js"></script>
 <script src="js/prediccion.js"></script>
 <script src="js/ruteo.js"></script>
 <script src="js/guia.js"></script>
 <script src="js/tendencias.js"></script>
-<script src="js/rueda.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
