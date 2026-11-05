@@ -52,6 +52,10 @@ const estado = Object.assign({
 }, leerEstado());
 const plan = { modo: "sorpresa", minutos: 60, maxKm: 5, hasta: null, ids: [], km: 0, estaciones: null };
 
+/** Un recorrido guardado de hace más de 6 horas ya no sirve (las estaciones y la hora cambiaron). */
+const VIGENCIA_EN_CURSO_MS = 6 * 60 * 60 * 1000;
+if (estado.enCurso && Date.now() - estado.enCurso.fecha > VIGENCIA_EN_CURSO_MS) estado.enCurso = null;
+
 function leerEstado() { try { return JSON.parse(localStorage.getItem(CLAVE_ESTADO)) || {}; } catch { return {}; } }
 function guardarEstado() { try { localStorage.setItem(CLAVE_ESTADO, JSON.stringify(estado)); } catch { /* modo privado */ } }
 
@@ -89,7 +93,7 @@ function mostrar() {
   document.querySelector(".app").classList.toggle("con-nav", conNav);
   $("#atras").hidden = ["bienvenida", "lugar"].includes(pantalla);   // en el detalle la flecha va sobre la foto
   $$("#nav a").forEach(a => a.classList.toggle("activo", a.dataset.tab === pantalla));
-  window.scrollTo(0, 0);
+  window.scrollTo(0, 0); pintarCaja();
   if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apaga el GPS
 
   ({ intereses: pintarIntereses, ubicacion: pintarUbicacion, inicio: pintarInicio, explorar: pintarExplorar,
@@ -309,7 +313,7 @@ document.addEventListener("click", e => {
   if (i >= 0) { estado.destinos.splice(i, 1); aviso(`${l.nombre} salió de tu recorrido.`); }
   else if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} lugares.`); return; }
   else { estado.destinos.push(id); plan.modo = "destino"; aviso(`${l.nombre} sumado (${estado.destinos.length}). Armá tu salida en Pedalear.`); }
-  plan.tramos = null; guardarEstado();
+  plan.tramos = null; guardarEstado(); pintarCaja();
   $$(`.mas[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "✓" : "+"; });
 });
 
@@ -690,7 +694,7 @@ $("#agregar-espacio").addEventListener("click", () => { agregando = true; pintar
 $("#destinos-elegidos").addEventListener("click", e => {
   const b = e.target.closest("[data-quitar]"); if (!b) return;
   estado.destinos = estado.destinos.filter(id => id !== Number(b.dataset.quitar));
-  plan.tramos = null; guardarEstado(); pintarPlanificar();
+  plan.tramos = null; guardarEstado(); pintarCaja(); pintarPlanificar();
 });
 $("#destino-q").addEventListener("input", () => {
   const items = buscarPuntos($("#destino-q").value, { estaciones: false, excluir: estado.destinos });
@@ -731,6 +735,45 @@ $("#buscar-recorrido").addEventListener("click", () => {
   if (plan.modo === "destino" && !estado.destinos.length) { aviso("Sumá al menos un espacio o elegí «Sorprendeme»."); return; }
   plan.tramos = null; location.hash = "recorrido";                // un recorrido nuevo cada vez
 });
+
+// ---------- Caja "Comenzar recorrido" (arriba de la barra de inicio) ----------
+// Aparece en Inicio, Explorar y Perfil apenas hay un lugar sumado con "+": un toque y arranca el recorrido, sin pasar por Pedalear.
+// Si hay un recorrido a medio hacer (se guarda en el celular), dice "Seguir tu recorrido".
+const mismoConjunto = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+function modoCaja() {
+  const c = estado.enCurso, seguir = c && mismoConjunto(estado.destinos, c.destinos);
+  return estado.destinos.length && !seguir ? "nuevo" : c ? "seguir" : null;
+}
+function pintarCaja() {
+  const caja = $("#caja-recorrido"), modo = modoCaja(), c = estado.enCurso;
+  const ver = !!modo && ["inicio", "explorar", "perfil"].includes(pantallaActual);
+  caja.hidden = false; caja.classList.toggle("visible", ver);
+  $("#caja-texto").innerHTML = modo === "seguir" ? `Seguir tu recorrido <small>· paso ${c.paso + 1} de ${c.total}</small>` : "Comenzar recorrido";
+}
+$("#caja-recorrido").addEventListener("click", () => {
+  const modo = modoCaja(), c = estado.enCurso;
+  if (modo === "seguir") {                                       // retoma donde quedó, con el mismo trazado y sin volver a pedirlo a la IA
+    if (c.origen) fijarOrigen(c.origen);                          // (fijarOrigen descarta el recorrido armado: se carga después)
+    estado.destinos = [...c.destinos];
+    Object.assign(plan, { modo: c.modo, hasta: c.hasta, ids: c.ids, estaciones: c.estaciones, textoBase: c.textoBase, tramos: c.tramos });
+    guia.reanudar = c.paso; guia.tramos = null;
+  } else if (modo === "nuevo") {
+    plan.modo = "destino"; plan.tramos = null;
+  } else return;
+  location.hash = "recorrido";
+});
+/** Guarda el recorrido y el paso en que vas, así se retoma si se cierra el navegador o se pierde la señal. */
+function guardarEnCurso(conTramos = false) {
+  if (!plan.tramos || !guia.pasos.length) return;
+  const previo = estado.enCurso;
+  if (conTramos || !previo) {
+    const tramos = plan.tramos.map(t => t.rutas?.length ? { ...t, rutas: [t.rutas[t.elegida || 0]], elegida: 0 } : t);   // solo el trazado elegido
+    estado.enCurso = { fecha: Date.now(), paso: guia.i, total: guia.pasos.length, destinos: [...estado.destinos], ids: plan.ids, hasta: plan.hasta,
+      modo: plan.modo, textoBase: plan.textoBase, estaciones: plan.estaciones, origen: { nombre: ORIGEN.nombre, lat: ORIGEN.lat, lon: ORIGEN.lon }, tramos };
+  } else { previo.paso = guia.i; previo.fecha = Date.now(); }
+  guardarEstado();
+}
+const vibrar = patron => { try { navigator.vibrate?.(patron); } catch { /* no todos los celulares vibran */ } };
 
 // ---------- 06 · Recorrido ----------
 // La IA decide QUÉ lugares visitar, en qué orden, en qué estación retirar y devolver la bici y qué trazado tomar.
@@ -1034,7 +1077,8 @@ function pintarMapaRecorrido(validos, elegida) {
 let guiaSesion = 0;
 function prepararGuia() {
   pausarGuia();
-  guia.tramos = plan.tramos; guia.pasos = GUIA.construir(plan.tramos); guia.i = 0; guia.ia = false; guia.restante = null; guia.hayFix = false;
+  guia.tramos = plan.tramos; guia.pasos = GUIA.construir(plan.tramos); const sigue = guia.reanudar != null || guia.recalculando; guia.i = Math.min(guia.reanudar ?? 0, guia.pasos.length - 1); guia.reanudar = null; guia.recalculando = false;
+  guia.yaRegistrado = sigue; guia.puntosRuta = null; guia.fuera = 0; guia.mostrado = -1; guia.ia = false; guia.restante = null; guia.hayFix = false;
   const mia = ++guiaSesion;
   // La IA redacta las instrucciones en segundo plano; mientras tanto rige el texto automático
   GUIA.mejorarConIA(guia.pasos, preguntarIA, climaTexto(), () => { if (mia === guiaSesion) pintarPaso(); })
@@ -1063,6 +1107,10 @@ function pintarPaso() {
   } else {
     icono.textContent = GUIA.icono(p); icono.style.background = ""; icono.classList.remove("cantidad", "claro");
   }
+  if (guia.mostrado !== guia.i) {                              // cambió el paso: el texto entra deslizando
+    guia.mostrado = guia.i;
+    [icono, $("#paso-actual .paso-cuerpo")].forEach(el => { el.classList.remove("nuevo"); void el.offsetWidth; el.classList.add("nuevo"); });
+  }
   $("#paso-etiqueta").textContent = guia.activa ? `Paso ${guia.i + 1} de ${guia.pasos.length}` : "Siguiente paso";
   $("#paso-texto").textContent = p.texto;
   const distancia = guia.activa && guia.restante != null ? `faltan ${fmtM(guia.restante)}` : (p.metros ? fmtM(p.metros) : "");
@@ -1080,6 +1128,7 @@ function centrarPaso(mover = true) {
 function celebrarLlegada(p) {
   if (p.celebrado) return;
   p.celebrado = true;
+  vibrar([200, 80, 200]);
   GUIA.celebrar(`¡Llegaste a ${p.tipo === "devolucion" ? `la ${p.nombre}` : p.nombre}!`);
 }
 
@@ -1088,7 +1137,8 @@ function avanzar(manual) {
   if (guia.i >= guia.pasos.length - 1) return;
   guia.i++; guia.restante = null;
   const p = guia.pasos[guia.i];
-  pintarPaso(); centrarPaso();
+  pintarPaso(); centrarPaso(); guardarEnCurso();
+  if (!manual) vibrar(120);                                   // aviso al tacto: pasó al paso siguiente
   if (manual && p.celebra) celebrarLlegada(p);
 }
 
@@ -1115,7 +1165,13 @@ function seguirGPS() {
       const s = guia.pasos[guia.i + k];
       if (esGiro(s) && guia.pasos.slice(guia.i, guia.i + k).every(esGiro) && GUIA.aMetros(aqui, s.punto) <= umbralDe(s)) { guia.i += k; p = s; break; }
     }
-    guia.restante = Math.round(GUIA.aMetros(aqui, p.punto));
+    guia.restante = Math.round(GUIA.aMetros(aqui, p.punto)); guia.ultimaPos = yo;
+    // ¿Te saliste de la ruta? Hacen falta 3 avisos seguidos de GPS (y buena precisión) para no alarmar por un salto del GPS
+    if (precision <= 50) {
+      guia.fuera = distanciaARuta(aqui) > 70 + precision ? guia.fuera + 1 : 0;
+      if (guia.fuera === 3) vibrar([150, 80, 150]);
+      $("#desvio").hidden = guia.fuera < 3;
+    }
     if (guia.restante <= umbralDe(p)) {
       if (esGiro(p)) { avanzar(false); return; }                  // giro cumplido: pasa solo al siguiente
       if (esParada(p)) { p.llegado = true; if (p.celebra) celebrarLlegada(p); }    // llegaste a una estación o a un lugar
@@ -1129,25 +1185,56 @@ function seguirGPS() {
 /** Detiene el GPS (al salir de la pantalla o al terminar). La guía queda en el paso donde estaba. */
 function pausarGuia() {
   if (guia.watch !== null) { navigator.geolocation.clearWatch(guia.watch); guia.watch = null; }
-  guia.activa = false;
+  guia.activa = false; guia.fuera = 0; $("#desvio").hidden = true;
+  soltarPantalla();
 }
 
+// La pantalla no se apaga mientras la guía está activa (si se apaga, el GPS deja de avisar)
+let bloqueoPantalla = null;
+async function mantenerPantalla() {
+  try {
+    if (!guia.activa || !("wakeLock" in navigator) || bloqueoPantalla) return;
+    bloqueoPantalla = await navigator.wakeLock.request("screen");
+    bloqueoPantalla.addEventListener("release", () => { bloqueoPantalla = null; });
+  } catch { bloqueoPantalla = null; /* el navegador no lo permite: la pantalla se apaga como siempre */ }
+}
+function soltarPantalla() { try { bloqueoPantalla?.release(); } catch { /* nada */ } bloqueoPantalla = null; }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) mantenerPantalla(); });
+
 function iniciarGuia() {
-  if (guia.i === 0) {                                      // primera vez: cuenta como visita a esos lugares y se guarda el resumen para el cierre
-    TEND.registrarInicio(plan.ids);
+  if (guia.i === 0) {                                      // al arrancar se guarda el resumen para el cierre
     estado.ultimo = { km: plan.km, mPie: plan.mPie, ids: [...plan.ids], estaciones: plan.estaciones, minutos: plan.minutosTotal, hasta: plan.hasta?.nombre || null };
-    guardarEstado();
   }
+  if (!guia.yaRegistrado) { TEND.registrarInicio(plan.ids); guia.yaRegistrado = true; }   // cuenta como visita a esos lugares, una sola vez por salida
+  guardarEnCurso(true);                                    // también guarda el recorrido para poder retomarlo
   guia.activa = true; guia.sinGPS = false;
   hojaRecorrido.poner(true);                               // el panel baja y queda solo el siguiente paso
-  seguirGPS();
+  seguirGPS(); mantenerPantalla();
   pintarPaso(); centrarPaso();
+}
+
+// Si te alejás de la ruta (varios avisos de GPS seguidos), aparece "Te desviaste" con un botón para recalcular desde donde estás
+$("#recalcular").addEventListener("click", () => {
+  if (!guia.ultimaPos) return;
+  const hechos = plan.ids.slice(0, guia.pasos.slice(0, guia.i).filter(p => p.tipo === "lugar").length);   // lugares por los que ya pasaste
+  const faltan = estado.destinos.filter(id => !hechos.includes(id));
+  if (plan.modo === "destino" && !faltan.length) { aviso("Ya pasaste por todos tus lugares: terminá el recorrido."); return; }
+  estado.destinos = faltan; guardarEstado();
+  fijarOrigen({ nombre: "Tu ubicación actual", ...guia.ultimaPos });
+  pausarGuia(); guia.recalculando = true; plan.tramos = null;
+  armarRecorrido();
+});
+function distanciaARuta(aqui) {
+  if (!guia.puntosRuta) guia.puntosRuta = plan.tramos.filter(t => t.rutas?.length).flatMap(t => t.rutas[t.elegida || 0].coords);
+  let min = Infinity;
+  for (const c of guia.puntosRuta) { const d = GUIA.aMetros(aqui, c); if (d < min) min = d; }
+  return min;
 }
 
 $("#iniciar").addEventListener("click", () => {
   if (!plan.tramos || !guia.pasos.length) return;
   if (!guia.activa) { iniciarGuia(); return; }
-  if (guia.i >= guia.pasos.length - 1) { pausarGuia(); location.hash = "cierre"; return; }   // fin: va directo a calificar
+  if (guia.i >= guia.pasos.length - 1) { pausarGuia(); estado.enCurso = null; guardarEstado(); location.hash = "cierre"; return; }   // fin: va directo a calificar
   avanzar(true);
 });
 

@@ -57,10 +57,10 @@ a { color: inherit; }
 .contenido { display: flex; flex-direction: column; gap: 14px; }
 .contenido.bajo { padding-top: 70px; }
 .sub { color: var(--texto-suave); font-weight: 600; }
-.nota { color: var(--texto-suave); font-size: 12px; font-weight: 600; }
+.nota { color: var(--texto-suave); font-size: 14px; font-weight: 600; }
 .texto { font-size: 15px; }
-.etiqueta { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
-.error { color: #b00020; font-weight: 600; font-size: 13px; }
+.etiqueta { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.error { color: #b00020; font-weight: 600; font-size: 14px; }
 
 /* ---------- Botones ---------- */
 .boton {
@@ -109,7 +109,7 @@ a { color: inherit; }
 .fila-opcion.activo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
 .separador { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--texto-suave); }
 .separador::before, .separador::after { content: ""; flex: 1; height: 1px; background: #d1d4d6; }
-.pie { margin-top: 26px; text-align: center; color: var(--texto-suave); font-size: 13px; }
+.pie { margin-top: 26px; text-align: center; color: var(--texto-suave); font-size: 14px; }
 
 /* ---------- Cajas y tarjetas ---------- */
 .caja-info {
@@ -131,7 +131,7 @@ a { color: inherit; }
 }
 .tarjeta-apilada:last-child { margin-bottom: 0; }
 .tarjeta-apilada strong { font-size: 15px; line-height: 1.1; letter-spacing: -.01em; }
-.tarjeta-apilada span { font-size: 12px; font-weight: 600; opacity: .9; }
+.tarjeta-apilada span { font-size: 14px; font-weight: 600; opacity: .9; }
 .tarjeta-apilada.rosa { background: var(--rosa); color: var(--crema); }
 .tarjeta-apilada.noche { background: var(--noche); color: var(--crema); }
 .tarjeta-apilada.naranja { background: var(--naranja); }
@@ -140,7 +140,7 @@ a { color: inherit; }
 /* ---------- Home ---------- */
 .saludo h1 { font-size: 32px; line-height: 1; }
 .saludo .sub { margin-top: 2px; }
-.clima { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.clima { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--texto-suave); }
 .hoja-scroll h2 { font-size: 15px; margin: 18px 0 10px; }
 .carrusel { display: flex; gap: 12px; overflow-x: auto; padding: 0 var(--gutter) 6px 0; scroll-snap-type: x mandatory; scrollbar-width: none; }
 .carrusel::-webkit-scrollbar { display: none; }
@@ -151,20 +151,20 @@ a { color: inherit; }
 .tarjeta-lugar .foto { position: relative; height: 108px; padding: 10px; background: var(--noche) center / cover; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; }
 .tarjeta-lugar .foto.sin-imagen { background: var(--mesh); color: var(--crema); font-weight: 700; font-size: 12px; }
 .tarjeta-apilada .ver { font-weight: 700; opacity: 1; }
-.tag { display: inline-block; padding: 5px 10px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.tag { display: inline-block; padding: 5px 12px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
 .tag.azul { background: var(--azul); }
 .tag.naranja { background: var(--naranja); color: var(--noche); }
 .tarjeta-lugar .info { display: flex; flex-direction: column; gap: 3px; padding: 10px 14px 14px; }
 .tarjeta-lugar strong { font-size: 15px; line-height: 1.3; }
-.tarjeta-lugar .meta { font-size: 12px; opacity: .72; }
+.tarjeta-lugar .meta { font-size: 14px; opacity: .72; }
 .tendencias { list-style: none; margin: 0; padding: 0 var(--gutter) 0 0; display: flex; flex-direction: column; gap: 8px; }
 .tendencias li a {
   display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--borde); border-radius: 18px;
   text-decoration: none; background: var(--crema);
 }
 .tendencias .puesto { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--noche); color: var(--crema); font-weight: 700; font-size: 13px; }
-.tendencias .cuantos { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--azul); }
-.tendencias .vacio { padding: 12px 0; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.tendencias .cuantos { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--azul); }
+.tendencias .vacio { padding: 14px 0; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
 
 /* ---------- Bienvenida ---------- */
 .hero-bienvenida { height: 340px; margin-bottom: 18px; border-radius: 28px; background: var(--mesh); }
@@ -174,7 +174,7 @@ a { color: inherit; }
 /* ---------- Mapa y recorrido ---------- */
 .mapa { height: 300px; border-radius: 28px; overflow: hidden; background: #edf0f2; }
 .pin { width: 30px; height: 30px; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; color: var(--crema); font-weight: 700; font-size: 14px; }
-.estacion-prediccion { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 600; }
+.estacion-prediccion { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; }
 .nivel-alta { color: #0b7a2a; } .nivel-media { color: #9a5b00; } .nivel-baja { color: #b00020; }
 
 /* ---------- Llegada: foto con la caja de km encima ---------- */
@@ -187,7 +187,7 @@ a { color: inherit; }
 .redondo { position: absolute; top: 52px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 252, 250, .92); color: var(--noche); font-size: 18px; text-decoration: none; cursor: pointer; }
 .redondo.izq { left: var(--gutter); } .redondo.der { right: var(--gutter); }
 .ficha { position: relative; margin-top: -40px; padding: 26px var(--gutter) 0; border-radius: 28px 28px 0 0; background: var(--crema); display: flex; flex-direction: column; gap: 14px; }
-.etiqueta-rosa { align-self: flex-start; padding: 4px 12px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.etiqueta-rosa { align-self: flex-start; padding: 4px 12px; border-radius: 22px; background: var(--rosa); color: var(--crema); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 
 
 /* ---------- Estrellas ---------- */
@@ -209,7 +209,7 @@ a { color: inherit; }
 .nav a.activo span { display: inline; }
 
 /* ---------- Leyenda del mapa: caminata punteada, bici continua ---------- */
-.leyenda { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.leyenda { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 14px; font-weight: 600; color: var(--texto-suave); }
 .leyenda[hidden] { display: none; }
 .muestra { display: inline-block; width: 28px; height: 0; margin-left: 6px; border-top: 4px solid var(--azul); }
 .muestra.bici { border-top-color: var(--azul); }
@@ -247,7 +247,7 @@ a { color: inherit; }
 .sugerencias button { width: 100%; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 14px; background: transparent; text-align: left; font: 600 14px "Inter", system-ui, sans-serif; color: var(--noche); cursor: pointer; }
 .sugerencias button:hover, .sugerencias button:focus-visible { background: rgba(32, 58, 233, .08); }
 .sugerencias small { display: block; font-weight: 400; color: var(--texto-suave); }
-.pill-origen { display: inline-block; margin-top: 10px; padding: 8px 14px; border: 2px solid var(--azul); border-radius: 999px; color: var(--noche); font-size: 13px; font-weight: 700; text-decoration: none; }
+.pill-origen { display: inline-block; margin-top: 10px; padding: 8px 14px; border: 2px solid var(--azul); border-radius: 999px; color: var(--noche); font-size: 14px; font-weight: 700; text-decoration: none; }
 .maplibregl-popup-content { font: 600 13px "Inter", system-ui, sans-serif; color: var(--noche); border-radius: 14px; }
 
 /* ---------- Home y Explorar: mapa de fondo + panel deslizable ---------- */
@@ -281,7 +281,7 @@ a { color: inherit; }
 .mas[aria-pressed="true"] { background: var(--azul); color: var(--crema); font-size: 19px; }
 .toast {
   position: fixed; left: 50%; bottom: calc(var(--nav-alto) + 40px); transform: translateX(-50%); z-index: 40; max-width: min(90vw, 380px);
-  padding: 12px 18px; border-radius: 999px; background: var(--noche); color: var(--crema); font-size: 13px; font-weight: 600; text-align: center;
+  padding: 12px 18px; border-radius: 999px; background: var(--noche); color: var(--crema); font-size: 14px; font-weight: 600; text-align: center;
   box-shadow: 0 6px 20px rgba(9, 41, 87, .3);
 }
 .toast[hidden] { display: none; }
@@ -320,7 +320,7 @@ a { color: inherit; }
 .paso-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .paso-cuerpo .etiqueta { opacity: .75; }
 .paso-cuerpo strong { font-size: 17px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.paso-meta { font-size: 12px; font-weight: 600; opacity: .8; }
+.paso-meta { font-size: 14px; font-weight: 600; opacity: .8; }
 
 /* ---------- Cápsulas azules (leyenda del mapa y datos sueltos) ---------- */
 .capsulas { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -354,23 +354,23 @@ a { color: inherit; }
 .horarios { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 2px solid var(--azul); border-radius: 24px; background: #fff; }
 .horarios-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .horarios .etiqueta { color: var(--azul); opacity: 1; }
-.estado { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(9, 41, 87, .08); color: var(--noche); }
+.estado { display: inline-flex; align-items: center; gap: 8px; padding: 5px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(9, 41, 87, .08); color: var(--noche); }
 .estado::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--rosa); }
 .estado.abierto::before { background: #1db954; }
 .semana { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .dia { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 76px; padding: 8px 2px; border-radius: 14px; background: rgba(32, 58, 233, .08); color: var(--noche); text-align: center; }
 .dia b { font-size: 12px; letter-spacing: .02em; }
-.dia span { font-size: 11px; font-weight: 600; line-height: 1.15; word-break: break-word; }
+.dia span { font-size: 12px; font-weight: 600; line-height: 1.15; word-break: break-word; }
 .dia.cerrado { background: rgba(9, 41, 87, .05); color: var(--texto-suave); }
-.dia .cerrado { font-weight: 400; font-size: 10px; }
+.dia .cerrado { font-weight: 400; font-size: 12px; }
 .dia.hoy { position: relative; background: var(--mesh); color: var(--crema); isolation: isolate; }
 .dia.hoy::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
 .dia.hoy.cerrado { background: var(--noche); }
 .dia.hoy.cerrado::after { display: none; }
 .horarios-texto { font-size: 15px; font-weight: 600; }
-.horarios-notas { font-size: 12px; font-weight: 600; color: var(--noche); }
-.horarios-nota { font-size: 12px; color: var(--texto-suave); }
-.credito { font-size: 11px; color: var(--texto-suave); }
+.horarios-notas { font-size: 14px; font-weight: 600; color: var(--noche); }
+.horarios-nota { font-size: 14px; color: var(--texto-suave); }
+.credito { font-size: 13px; color: var(--texto-suave); }
 .credito a { color: inherit; }
 
 /* ---------- Explorar: las tarjetas de abajo (todavía no vistas) se apagan ---------- */
@@ -388,8 +388,39 @@ a { color: inherit; }
 .est-pin.estimado { width: 20px; height: 20px; opacity: .92; }   /* sin datos en vivo: círculo sin número */
 .est-pin .tipo { display: none; }
 .est-pin.fondo { width: 24px; height: 24px; border-width: 2px; font-size: 11px; opacity: .85; box-shadow: 0 1px 4px rgba(9, 41, 87, .3); }
-.leyenda-bicis { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.leyenda-bicis { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; font-weight: 600; color: var(--texto-suave); }
 .leyenda-bicis li { display: inline-flex; align-items: center; gap: 6px; }
 .leyenda-bicis i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(9, 41, 87, .25); }
 .paso-icono.cantidad { font-size: 22px; }
 .paso-icono.claro { color: var(--noche); }
+
+/* ---------- Uso en la calle: tocables más grandes, anillo del paso y avisos ---------- */
+.boton.compacto { height: 56px; }                                   /* botón de la guía: mínimo 56 px */
+.paso-cuerpo strong { font-size: 19px; }                            /* lo que se lee de reojo, más grande */
+.paso-icono { width: 56px; height: 56px; }
+
+/* Anillo que marca el punto del paso actual en el mapa (late suave) */
+.anillo-paso { width: 26px; height: 26px; border-radius: 50%; border: 4px solid var(--rosa); background: rgba(249, 0, 131, .18); pointer-events: none; animation: latido 1.6s ease-out infinite; }
+@keyframes latido { 0% { box-shadow: 0 0 0 0 rgba(249, 0, 131, .5); } 100% { box-shadow: 0 0 0 22px rgba(249, 0, 131, 0); } }
+/* Al pasar al paso siguiente, el texto entra deslizando para que se note el cambio */
+.paso-cuerpo.nuevo, .paso-icono.nuevo { animation: entra-paso .35s cubic-bezier(.2, .8, .2, 1); }
+@keyframes entra-paso { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .anillo-paso { animation: none; } .paso-cuerpo.nuevo, .paso-icono.nuevo { animation: none; } }
+
+/* "Te desviaste": aviso sobre la caja del paso */
+.desvio { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 18px; background: #fff3e0; border: 2px solid var(--naranja); color: var(--noche); font-weight: 700; font-size: 15px; }
+.desvio[hidden] { display: none; }
+.desvio button { margin-left: auto; min-height: 44px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--noche); color: var(--crema); font: 700 14px "Inter", system-ui, sans-serif; cursor: pointer; }
+
+/* Caja "Comenzar recorrido": va justo arriba de la barra de inicio y mide la mitad de alto que ella */
+.caja-recorrido {
+  position: fixed; left: 50%; bottom: calc(22px + var(--nav-alto) + 8px); transform: translateX(-50%); z-index: 6;
+  width: calc(min(100vw, 430px) - 2 * var(--gutter)); height: calc(var(--nav-alto) / 2);
+  display: none; align-items: center; justify-content: space-between; padding: 0 20px; border: 0; border-radius: 20px;
+  background: var(--mesh); color: var(--crema); font: 700 15px "Inter", system-ui, sans-serif; cursor: pointer; isolation: isolate;
+  box-shadow: 0 6px 18px rgba(9, 41, 87, .25);
+}
+.caja-recorrido.visible { display: flex; animation: entra-caja .3s cubic-bezier(.2, .8, .2, 1); }
+.caja-recorrido small { font: 600 13px "Inter", system-ui, sans-serif; opacity: .95; }
+@keyframes entra-caja { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .caja-recorrido.visible { animation: none; } }

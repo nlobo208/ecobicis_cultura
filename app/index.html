@@ -186,6 +186,7 @@
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <div class="paso-actual" id="paso-actual">
+          <div class="desvio" id="desvio" role="alert" hidden><span>Te desviaste de la ruta</span><button type="button" id="recalcular">Recalcular</button></div>
           <div class="paso-fila" aria-live="polite">
           <span class="paso-icono" id="paso-icono" aria-hidden="true">…</span>
           <div class="paso-cuerpo">
@@ -285,6 +286,8 @@
     <button class="boton fijo" id="detalle-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
   </section>
 
+  <!-- Aparece arriba de la barra de inicio cuando hay lugares para visitar (o un recorrido a medio hacer) -->
+  <button class="caja-recorrido" id="caja-recorrido" type="button" hidden><span id="caja-texto">Comenzar recorrido</span><span aria-hidden="true">→</span></button>
   <nav class="nav" id="nav" aria-label="Principal">
     <a href="#inicio" data-tab="inicio" aria-label="Inicio">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg><span>Inicio</span></a>
