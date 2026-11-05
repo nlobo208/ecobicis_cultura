@@ -428,3 +428,7 @@ a { color: inherit; }
 /* ---------- Bienvenida: solo el saludo y el botón de abajo ---------- */
 #bienvenida.visible { display: flex; flex-direction: column; justify-content: center; }
 #bienvenida h1 { margin-top: 24vh; font-size: 46px; line-height: 1.05; letter-spacing: -.02em; }
+
+/* Sin barras ni flechas de scroll: se desliza con el dedo */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }

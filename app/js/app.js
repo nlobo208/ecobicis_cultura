@@ -72,16 +72,19 @@ const fotoUrl = l => l.img ? `img/${l.img}` : "";
 // ---------- Navegación (#inicio, #lugar/123, …) ----------
 const TABS = ["inicio", "explorar", "planificar", "perfil"];
 const PUBLICAS = ["bienvenida", "cuenta"];
+const MIN_INTERESES = 2;                       // mínimo de intereses para seguir (el máximo es 5)
 let pantallaActual = "";
+let finalizado = false;                        // terminó el recorrido ("Finalizar"): en Inicio ya no se puede volver a Compartir
 
 function mostrar() {
   let [pantalla, param] = location.hash.slice(1).split("/");
   if (!pantalla || !document.getElementById(pantalla)) pantalla = estado.email ? "inicio" : "bienvenida";
   if (!estado.email && !PUBLICAS.includes(pantalla)) pantalla = "bienvenida";
-  if (estado.email && estado.intereses.length < 3 && pantalla !== "intereses" && !PUBLICAS.includes(pantalla)) pantalla = "intereses";
+  if (estado.email && estado.intereses.length < MIN_INTERESES && pantalla !== "intereses" && !PUBLICAS.includes(pantalla)) pantalla = "intereses";
   // Con intereses ya elegidos, antes de ofrecer nada se pregunta desde dónde salís (en cada sesión)
-  if (estado.email && estado.intereses.length >= 3 && !origenElegido && !["intereses", "ubicacion", ...PUBLICAS].includes(pantalla)) pantalla = "ubicacion";
+  if (estado.email && estado.intereses.length >= MIN_INTERESES && !origenElegido && !["intereses", "ubicacion", ...PUBLICAS].includes(pantalla)) pantalla = "ubicacion";
   pantallaActual = pantalla;
+  if (pantalla !== "inicio") finalizado = false;
   // Si un desvío cambió la pantalla (por ejemplo, pedir la ubicación), la URL pasa a decir lo mismo que se ve:
   // si no, tocar "continuar" hacia #inicio no dispararía hashchange porque la URL ya diría #inicio.
   const destino = pantalla === "lugar" && param ? `${pantalla}/${param}` : pantalla;
@@ -91,7 +94,7 @@ function mostrar() {
   const conNav = TABS.includes(pantalla);
   $("#nav").classList.toggle("visible", conNav);
   document.querySelector(".app").classList.toggle("con-nav", conNav);
-  $("#atras").hidden = ["bienvenida", "lugar"].includes(pantalla);   // en el detalle la flecha va sobre la foto
+  $("#atras").hidden = ["bienvenida", "intereses", "lugar", "cierre", "compartir"].includes(pantalla) || (finalizado && pantalla === "inicio");   // en el detalle la flecha va sobre la foto
   $$("#nav a").forEach(a => a.classList.toggle("activo", a.dataset.tab === pantalla));
   window.scrollTo(0, 0); pintarCaja();
   if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apaga el GPS
@@ -152,7 +155,7 @@ function pintarIntereses() {
   $("#chips-intereses").innerHTML = INTERESES.map(i =>
     `<button class="chip ${estado.intereses.includes(i) ? "activo" : ""}" data-interes="${esc(i)}" aria-pressed="${estado.intereses.includes(i)}">${esc(i)}</button>`).join("");
   const n = estado.intereses.length;
-  $("#guardar-intereses").disabled = n < 3 || n > 5;
+  $("#guardar-intereses").disabled = n < MIN_INTERESES || n > 5;
   $("#guardar-intereses").firstChild.textContent = n ? `Guardar intereses · ${n} ` : "Guardar intereses ";
 }
 $("#chips-intereses").addEventListener("click", e => {
@@ -1284,6 +1287,10 @@ function pintarPerfil() {
     ["verde", fmtKm(kmDesde(30)), "Últimos 30 días"],
     ["celeste", `${estado.salidas} salidas`, "Desde que empezaste"]
   ].map(([c, t, d]) => `<div class="tarjeta-apilada ${c}"><strong>${t}</strong><span>${d}</span></div>`).join("");
+  const favoritos = estado.guardados.map(porId).filter(Boolean);
+  $("#preferidos").innerHTML = favoritos.map(l => tarjetaLugarHTML({ lugar: l, etiqueta: "♥ PREFERIDO", titulo: l.nombre, textoSinImagen: l.categoria,
+    metas: [`${l.categoria} · ${l.barrio}`] })).join("");
+  $("#preferidos").hidden = !favoritos.length; $("#preferidos-vacio").hidden = favoritos.length > 0;
   $("#mis-intereses").innerHTML = estado.intereses.map(i => `<span class="chip activo">${esc(i)}</span>`).join("");
 }
 
@@ -1303,7 +1310,10 @@ $$("#compartir [data-red]").forEach(b => b.addEventListener("click", async () =>
     else { await navigator.clipboard.writeText(texto); aviso("Texto copiado: pegalo en tu historia de Instagram."); }
   } catch (e) { if (e?.name !== "AbortError") aviso("No pudimos compartir desde acá. Probá desde el celular."); }   // AbortError = la persona canceló
 }));
-$("#compartir-ya").addEventListener("click", () => { location.hash = "inicio"; });
+$("#compartir-ya").addEventListener("click", () => {
+  finalizado = true; navegaciones = 0; volviendo = true;      // cierra la etapa: ni la flecha ni el historial interno llevan de vuelta a Compartir
+  location.hash = "inicio";
+});
 
 // ---------- Bicis y anclajes en vivo ----------
 // Cada vez que llegan datos nuevos (cada minuto) se actualizan los círculos del Home, los del mapa del recorrido,
