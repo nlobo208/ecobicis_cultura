@@ -103,7 +103,7 @@ function mostrar() {
 
 // ---------- Flecha para volver ----------
 // Si la persona ya navegó dentro de la app se usa el historial del navegador; si entró directo, va a la pantalla anterior del flujo.
-const PADRE = { cuenta: "bienvenida", intereses: "cuenta", ubicacion: "intereses", inicio: "ubicacion", explorar: "inicio", lugar: "explorar",
+const PADRE = { cuenta: "bienvenida", intereses: "bienvenida", ubicacion: "intereses", inicio: "ubicacion", explorar: "inicio", lugar: "explorar",
   planificar: "inicio", recorrido: "planificar", cierre: "recorrido", perfil: "inicio", compartir: "perfil" };
 let navegaciones = 0, volviendo = false;
 window.addEventListener("hashchange", () => { if (volviendo) volviendo = false; else navegaciones++; mostrar(); });
@@ -113,6 +113,14 @@ function volver() {
 }
 $("#atras").addEventListener("click", volver);
 $("#atras-lugar").addEventListener("click", volver);
+
+// ---------- 00 · Bienvenida ----------
+// Sin cuenta por ahora (prototipo): "Comenzar a pedalear" entra como invitado y sigue con "¿Qué te mueve?".
+$("#comenzar").addEventListener("click", e => {
+  e.preventDefault();
+  if (!estado.email) { estado.email = "invitado"; estado.nombre = ""; guardarEstado(); }
+  location.hash = "intereses";
+});
 
 // ---------- 01 · Crear cuenta (prototipo: no hay servidor, se guarda solo en este navegador) ----------
 $("#form-cuenta").addEventListener("submit", e => {
@@ -169,7 +177,7 @@ function elegirPunto(p, nombre) {
   seleccion = { lat: p.lat, lon: p.lon, nombre: nombre || `Cerca de ${e.nombre}` };
   marcaUbi?.setLngLat([p.lon, p.lat]);
   $("#origen-aviso").textContent = dentro
-    ? `Estación EcoBici más cercana: ${e.nombre}, a ${Math.round(m)} m.`
+    ? `Estación EcoBici más cercana: ${e.nombre}, a ${Math.round(m)} m. El recorrido arranca desde este punto.`
     : "Ese punto queda fuera de la zona que cubrimos (comunas 1, 2, 4 y 14). Elegí otro.";
   $("#confirmar-origen").disabled = !dentro;
 }
@@ -353,7 +361,7 @@ function dispTexto(est, clave) {
 /** Aplica número y color a un círculo de estación. `clave`: "bicis" (retirar) o "anclajes" (dejar la bici). */
 function pintarPin(el, numero, clave, sinDatos = "") {
   const v = DISP.de(numero);
-  el.className = "est-pin";
+  el.classList.add("est-pin"); el.classList.remove("claro", "estimado");   // sin pisar "maplibregl-marker": si no, el círculo pierde su posición en el mapa
   if (v) {
     const n = clave === "bicis" ? v.bicis : v.anclajes, nv = DISP.nivelDe(n, v.capacidad);
     el.textContent = n; el.style.background = nv.color; el.classList.toggle("claro", nv.claro);
@@ -1321,4 +1329,7 @@ function refrescarDisponibilidad() {
 DISP.alCambiar(refrescarDisponibilidad);
 DISP.iniciar();
 
+// Cada vez que se abre la página se empieza de cero: arranca en "Bienvenido" y se despinean los lugares y el recorrido de la vez anterior
+estado.destinos = []; estado.enCurso = null; guardarEstado();
+history.replaceState(null, "", "#bienvenida");
 mostrar();
