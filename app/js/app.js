@@ -12,6 +12,9 @@ const ENV = Object.assign({
 const LUGARES = window.PEDALITO_LUGARES;
 // Fotos con licencia libre de los hotspots (data/fotos.js): se suman a cada lugar. Los lugares sin foto libre quedan sin imagen.
 Object.entries(window.PEDALITO_FOTOS || {}).forEach(([id, f]) => { const l = LUGARES.find(x => x.id === Number(id)); if (l) { l.img = `lugares/${f.archivo}`; l.foto = f; } });
+// Nombres de barrio como se escriben (el dataset los trae sin tildes y "Boca" en vez de "La Boca")
+const NOMBRE_BARRIO = { "San Nicolas": "San Nicolás", "Constitucion": "Constitución", "Boca": "La Boca" };
+[...LUGARES, ...(window.PEDALITO_ESTACIONES || [])].forEach(x => { if (NOMBRE_BARRIO[x.barrio]) x.barrio = NOMBRE_BARRIO[x.barrio]; });
 const ACTIVIDADES = window.PEDALITO_ACTIVIDADES || [];
 const ESTACIONES = window.PEDALITO_ESTACIONES;
 const PRED = window.PedalitoPrediccion, TEND = window.PedalitoTendencias, HOR = window.PedalitoHorarios;
@@ -83,6 +86,7 @@ function mostrar() {
   if (estado.email && estado.intereses.length < MIN_INTERESES && pantalla !== "intereses" && !PUBLICAS.includes(pantalla)) pantalla = "intereses";
   // Con intereses ya elegidos, antes de ofrecer nada se pregunta desde dónde salís (en cada sesión)
   if (estado.email && estado.intereses.length >= MIN_INTERESES && !origenElegido && !["intereses", "ubicacion", ...PUBLICAS].includes(pantalla)) pantalla = "ubicacion";
+  if (pantalla === "explorar" && pantallaActual !== "explorar" && pantallaActual !== "lugar") reiniciarFiltros();
   pantallaActual = pantalla;
   if (pantalla !== "inicio") finalizado = false;
   // Si un desvío cambió la pantalla (por ejemplo, pedir la ubicación), la URL pasa a decir lo mismo que se ve:
@@ -174,14 +178,17 @@ function estacionMasCercana(p) {
   return ESTACIONES.reduce((mejor, e) => { const m = PRED.distKm(p, e) * 1000; return m < mejor.m ? { e, m } : mejor; }, { e: null, m: Infinity });
 }
 
-/** Marca el punto de salida elegido y avisa si queda fuera de la zona cubierta (comunas 1, 2, 4 y 14). */
+/** Marca el punto de salida elegido y avisa si queda fuera de la zona cubierta (12 barrios: ver js/zona.js). */
+const ZONA = window.PedalitoZona;
 function elegirPunto(p, nombre) {
-  const { e, m } = estacionMasCercana(p), dentro = m <= 2000;
+  const { e, m } = estacionMasCercana(p);
+  const barrio = ZONA.barrioDe(p);
+  const dentro = ZONA.hay ? !!barrio : m <= 2000;           // sin el límite cargado, se usa la regla de 2 km a una estación
   seleccion = { lat: p.lat, lon: p.lon, nombre: nombre || `Cerca de ${e.nombre}` };
   marcaUbi?.setLngLat([p.lon, p.lat]);
   $("#origen-aviso").textContent = dentro
-    ? `Estación EcoBici más cercana: ${e.nombre}, a ${Math.round(m)} m. El recorrido arranca desde este punto.`
-    : "Ese punto queda fuera de la zona que cubrimos (comunas 1, 2, 4 y 14). Elegí otro.";
+    ? `${barrio ? barrio + " · " : ""}Estación EcoBici más cercana: ${e.nombre}, a ${Math.round(m)} m.`
+    : `Ese punto queda fuera de los barrios que cubrimos (${ZONA.texto}). Elegí otro${ZONA.hay ? " dentro del borde punteado" : ""}.`;
   $("#confirmar-origen").disabled = !dentro;
 }
 
@@ -194,6 +201,7 @@ function pintarUbicacion() {
   if (!mapaUbi) {
     mapaUbi = new maplibregl.Map({ container: "mapa-ubicacion", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
       zoom: 14.5, attributionControl: false });
+    ZONA.dibujar(mapaUbi);
     mapaUbi.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaUbicacion.visiblePx()) } });
     mapaUbi.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaUbi.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
@@ -417,23 +425,39 @@ function pintarEstacionesHome() {
     : "Sin datos en vivo por ahora: los colores son una estimación según el día y la hora. Tocá una estación para ver el detalle.";
 }
 
+/** Lugares (hotspots) de tus intereses a 5 km o menos, como cuadrados rosas sobre el mapa de Inicio. */
+let marcasLugares = [];
+function pintarLugaresHome() {
+  if (!mapaHome || !window.maplibregl) return;
+  marcasLugares.forEach(m => m.remove()); marcasLugares = [];
+  LUGARES.filter(l => estado.intereses.includes(l.categoria) && desdeOrigen(l) <= 5).sort((a, b) => desdeOrigen(a) - desdeOrigen(b)).slice(0, 120).forEach(l => {
+    const el = document.createElement("button"); el.type = "button"; el.className = "lugar-pin"; el.setAttribute("aria-label", l.nombre);
+    el.addEventListener("click", ev => {
+      ev.stopPropagation();
+      new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br><a href="#lugar/${l.id}">Ver lugar →</a>`).addTo(mapaHome);
+    });
+    marcasLugares.push(new maplibregl.Marker({ element: el }).setLngLat([l.lon, l.lat]).addTo(mapaHome));
+  });
+}
+
 function pintarMapaHome() {
   if (!window.maplibregl) return;
   if (mapaHome) {                                   // volvió a Home: recentrar en el punto de salida y refrescar estaciones
     mapaHome.resize(); mapaHome.jumpTo({ center: [ORIGEN.lon, ORIGEN.lat], zoom: 14.5, padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaInicio.visiblePx()) } });
     marcaHome.setLngLat([ORIGEN.lon, ORIGEN.lat]);
-    pintarEstacionesHome();
+    pintarEstacionesHome(); pintarLugaresHome();
     return;
   }
   mapaHome = new maplibregl.Map({ container: "mapa-home", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
     zoom: 14.5, attributionControl: false });
+  ZONA.dibujar(mapaHome);
   mapaHome.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaInicio.visiblePx()) } });
   mapaHome.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   mapaHome.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
   const punto = document.createElement("div");
   punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#203ae9;border:3px solid #fff;box-shadow:0 0 0 10px rgba(32,58,233,.25)";
   marcaHome = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaHome);
-  pintarEstacionesHome();
+  pintarEstacionesHome(); pintarLugaresHome();
 }
 const hojaInicio = hacerDeslizable($("#hoja-inicio"), () => ajustarMapa(mapaHome, hojaInicio));
 
@@ -519,7 +543,9 @@ const COLOR_TARJETA = { naranja: "#f76c09", celeste: "#00baf1", verde: "#38ea59"
 const ZONA_FOCO = 90;             // px de scroll en los que una tarjeta pasa de tamaño normal a agrandada (= lo que se asoma de cada tarjeta apilada)
 let mapaExp, marcaExp, geoPendiente;
 // Los tres filtros son interruptores independientes: se pueden combinar o apagar todos (entonces se ve todo, del más cerca al más lejos)
-const filtros = { cerca: true, intereses: false, verificado: false };
+const filtros = { cerca: false, intereses: false, verificado: false };
+/** Cada vez que se entra a Explorar (salvo al volver del detalle de un lugar) los tres filtros y el buscador arrancan apagados. */
+function reiniciarFiltros() { Object.assign(filtros, { cerca: false, intereses: false, verificado: false }); $("#buscador").value = ""; limite = MAX_LISTA; }
 let limite = MAX_LISTA;           // cuántos lugares se muestran; "Ver más" suma otra tanda
 
 function pintarExplorar({ masLugares = false } = {}) {
@@ -580,6 +606,7 @@ function pintarMapaExplorar(lista, reencuadrar = true) {
   if (!mapaExp) {
     geoPendiente = geo;
     mapaExp = new maplibregl.Map({ container: "mapa-explorar", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat], zoom: 14, attributionControl: false });
+    ZONA.dibujar(mapaExp);
     mapaExp.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaExp.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
     const punto = document.createElement("div");
@@ -1034,6 +1061,7 @@ function pintarMapaRecorrido(validos, elegida) {
   mapa = new maplibregl.Map({ container: "mapa", style: ENV.OPENFREEMAP_STYLE_URL, attributionControl: false,
     bounds: [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
     fitBoundsOptions: { padding: { top: 80, left: 30, right: 30, bottom: Math.round(hojaRecorrido.visiblePx()) + 30 }, maxZoom: 17 } });
+  ZONA.dibujar(mapa);
   mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   mapa.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
   mapa.on("dragstart", () => { guia.ultimoArrastre = Date.now(); });   // si movés el mapa, la guía no te lo pelea por unos segundos
@@ -1311,6 +1339,7 @@ $$("#compartir [data-red]").forEach(b => b.addEventListener("click", async () =>
   } catch (e) { if (e?.name !== "AbortError") aviso("No pudimos compartir desde acá. Probá desde el celular."); }   // AbortError = la persona canceló
 }));
 $("#compartir-ya").addEventListener("click", () => {
+  hojaInicio.poner(false);                                    // Inicio vuelve con el panel blanco a la mitad de la pantalla
   finalizado = true; navegaciones = 0; volviendo = true;      // cierra la etapa: ni la flecha ni el historial interno llevan de vuelta a Compartir
   location.hash = "inicio";
 });
@@ -1339,7 +1368,7 @@ function refrescarDisponibilidad() {
 DISP.alCambiar(refrescarDisponibilidad);
 DISP.iniciar();
 
-// Cada vez que se abre la página se empieza de cero: arranca en "Bienvenido" y se despinean los lugares y el recorrido de la vez anterior
-estado.destinos = []; estado.enCurso = null; guardarEstado();
+// Cada vez que se abre la página se empieza de cero: arranca en "Bienvenido" y se despinean los lugares, el recorrido y los intereses de la vez anterior
+estado.destinos = []; estado.enCurso = null; estado.intereses = []; guardarEstado();
 history.replaceState(null, "", "#bienvenida");
 mostrar();

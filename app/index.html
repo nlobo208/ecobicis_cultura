@@ -50,7 +50,7 @@
   <!-- 02 · Intereses -->
   <section class="pantalla" id="intereses">
     <div class="contenido bajo">
-      <h1>¿Qué te mueve?</h1>
+      <h1>¿Qué tipo de actividad harías hoy?</h1>
       <p class="sub">Elegí de 2 a 5 intereses. Los podés cambiar después.</p>
       <div class="chips" id="chips-intereses"></div>
       <p class="nota">Tu selección mejora “Para vos” y los recorridos sugeridos.</p>
@@ -83,7 +83,7 @@
        data-abierta / data-cerrada = % de la pantalla que ocupa el panel en cada estado. -->
   <section class="pantalla con-hoja" id="inicio">
     <div class="mapa-fondo" id="mapa-home" aria-label="Mapa en vivo de tu zona: arrastralo y hacé zoom"></div>
-    <div class="hoja-desliz" id="hoja-inicio" data-abierta="63" data-cerrada="25">
+    <div class="hoja-desliz" id="hoja-inicio" data-abierta="50" data-cerrada="25">
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <div class="saludo">
@@ -97,6 +97,7 @@
             <li><i style="background:#e5202e"></i>Bajo</li>
             <li><i style="background:#f76c09"></i>Medio</li>
             <li><i style="background:#ffd400"></i>Alto</li>
+            <li><i class="cuadrado"></i>Lugares</li>
           </ul>
         </div>
 
@@ -214,8 +215,9 @@
   </section>
 
   <!-- 08 · Cierre -->
-  <section class="pantalla" id="cierre">
-    <div class="contenido">
+  <section class="pantalla tres-cuartos" id="cierre">
+    <div class="franja-imagen" role="img" aria-label=""></div>
+    <div class="contenido panel-blanco">
       <h1>Recorrido completado</h1>
       <p class="sub">Bici devuelta correctamente. Guardamos tus kilómetros.</p>
       <div class="caja-info">
@@ -252,8 +254,9 @@
   </section>
 
   <!-- 10 · Compartir -->
-  <section class="pantalla" id="compartir">
-    <div class="contenido">
+  <section class="pantalla tres-cuartos" id="compartir">
+    <div class="franja-imagen" role="img" aria-label=""></div>
+    <div class="contenido panel-blanco">
       <h1>Compartí tu salida</h1>
       <p class="sub">Sin rankings. Solo tu recorrido.</p>
       <div class="caja-info grande">
@@ -307,6 +310,8 @@
 <script src="data/estaciones_modelo.js"></script>
 <script src="data/ciclovias.js"></script>
 <script src="data/actividades.js"></script>
+<script src="data/zona_barrios.js" onerror="void 0"></script>
+<script src="js/zona.js"></script>
 <script src="js/horarios.js"></script>
 <script src="js/disponibilidad.js"></script>
 <script src="js/prediccion.js"></script>

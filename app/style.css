@@ -178,12 +178,14 @@ a { color: inherit; }
 .nivel-alta { color: #0b7a2a; } .nivel-media { color: #9a5b00; } .nivel-baja { color: #b00020; }
 
 /* ---------- Llegada: foto con la caja de km encima ---------- */
-.foto-caja .foto { height: 260px; border-radius: 28px; background: var(--mesh) center / cover; }
+.foto-caja .foto { height: 260px; border-radius: 28px; background: var(--mesh); background-position: center; background-size: cover; }
 .foto-caja .caja-info { margin-top: -40px; }
 
 /* ---------- Detalle ---------- */
 .pantalla.detalle { padding: 0 0 140px; }
-.hero { position: relative; height: 360px; background: var(--mesh) center / cover; }
+/* Ojo: --mesh tiene 10 capas; con "background: var(--mesh) center / cover" el cover quedaba solo en la última capa
+   y la foto se mostraba a tamaño natural (por eso el Teatro San Martín se veía recortado). Ahora va aparte. */
+.hero { position: relative; aspect-ratio: 4 / 3; background: var(--mesh); background-position: center; background-size: cover; }
 .redondo { position: absolute; top: 52px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 252, 250, .92); color: var(--noche); font-size: 18px; text-decoration: none; cursor: pointer; }
 .redondo.izq { left: var(--gutter); } .redondo.der { right: var(--gutter); }
 .ficha { position: relative; margin-top: -40px; padding: 26px var(--gutter) 0; border-radius: 28px 28px 0 0; background: var(--crema); display: flex; flex-direction: column; gap: 14px; }
@@ -432,3 +434,17 @@ a { color: inherit; }
 /* Sin barras ni flechas de scroll: se desliza con el dedo */
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { display: none; }
+
+/* ---------- Cierre y Compartir: 1/4 superior para una imagen y panel blanco en los 3/4 de abajo ---------- */
+/* Para poner la imagen: .franja-imagen { background-image: url(img/archivo.jpg); } (hoy lleva el degradado de la marca) */
+.pantalla.tres-cuartos { padding: 0; }
+.franja-imagen { height: 25vh; height: 25dvh; background: var(--mesh) center / cover no-repeat; }
+.panel-blanco {
+  position: relative; min-height: 75vh; min-height: 75dvh; margin-top: -22px; padding: 26px var(--gutter) 150px;
+  border-radius: 22px 22px 0 0; background: var(--crema); box-shadow: 0 -6px 24px rgba(9, 41, 87, .18);
+}
+
+/* Lugares (hotspots) en el mapa de Inicio: cuadrados, para distinguirlos de las estaciones (círculos) */
+.lugar-pin { z-index: 1; width: 22px; height: 22px; padding: 0; border: 3px solid #fff; border-radius: 6px; background: var(--rosa); box-shadow: 0 2px 6px rgba(9, 41, 87, .35); cursor: pointer; }
+.est-pin { z-index: 2; }
+.leyenda-bicis i.cuadrado { border-radius: 4px; background: var(--rosa); }

@@ -6,7 +6,7 @@
 // Si falla devuelve null: la app lo avisa y NO dibuja una línea recta que atraviese edificios.
 //
 // También mide qué porcentaje de cada trazado de bici va por una ciclovía real
-// (data/ciclovias.js, dataset de ciclovías de las comunas 1, 2, 4 y 14).
+// (data/ciclovias.js, dataset de ciclovías recortado a los 12 barrios de la zona).
 
 (function () {
   const BASE = { bici: "https://routing.openstreetmap.de/routed-bike", pie: "https://routing.openstreetmap.de/routed-foot" };
