@@ -1,10 +1,10 @@
-// Pedalito · bicis y anclajes disponibles en vivo (API de EcoBici de la Ciudad)
+// Pedalito · bicis y anclajes disponibles en vivo (feed público GBFS v3.0 de EcoBici de la Ciudad)
 //
-// La clave de la API NO viaja al navegador: la usa la función de Netlify netlify/functions/ecobici.mjs, que devuelve
-// el estado de cada estación (bicis, anclajes libres, capacidad). Acá se lo asocia a las 110 estaciones de la app
-// por cercanía y se calcula el color de cada una.
+// El feed no necesita claves, pero no admite pedidos directos desde el navegador (CORS): los hace la función de Netlify
+// netlify/functions/ecobici.mjs, que devuelve el estado de cada estación (bicis, anclajes libres, capacidad).
+// Acá se asocia a las 110 estaciones de la app por su número oficial (el station_id del feed) y se calcula el color.
 //
-// Si la función no está disponible (sin claves, sin Netlify, sin internet) `enVivo` queda en false y la app usa
+// Si la función no está disponible (sin Netlify, sin internet) `enVivo` queda en false y la app usa
 // la estimación de js/prediccion.js, avisando que es una estimación.
 
 (function () {
@@ -50,8 +50,9 @@
       porNumero.clear();
       let asociadas = 0;
       ESTACIONES.forEach(e => {
-        let mejor = null, md = Infinity;
-        d.estaciones.forEach(s => { if (s.lat == null) return; const m = distM(e, s); if (m < md) { md = m; mejor = s; } });
+        // Primero por número oficial (station_id = número de la estación); si el feed no lo trae, por cercanía
+        let mejor = d.estaciones.find(s => String(s.id) === String(e.numero)) || null, md = 0;
+        if (!mejor) { md = Infinity; d.estaciones.forEach(s => { if (s.lat == null) return; const m = distM(e, s); if (m < md) { md = m; mejor = s; } }); }
         if (!mejor || md > RADIO_M) return;
         const bicis = Number(mejor.bicis) || 0, anclajes = Number(mejor.anclajes) || 0, desh = Number(mejor.deshabilitadas) || 0;
         const capacidad = Number(mejor.capacidad) > 0 ? Number(mejor.capacidad) : bicis + anclajes + desh;

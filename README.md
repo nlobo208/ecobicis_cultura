@@ -32,7 +32,7 @@ Todos de BA Data (data.buenosaires.gob.ar), descargados el 2026-09-28 salvo que 
 | Recorridos realizados 2024 (zip) | FALTA (crítico, error 504) | Viajes por estación, fecha, hora y duración. Necesario para probar la hipótesis | https://data.buenosaires.gob.ar/dataset/bicicletas-publicas |
 | Ferias y mercados | Opcional | Feria de artesanos como oferta cultural | https://data.buenosaires.gob.ar/dataset/ferias-mercados |
 | Bicicleteros en vía pública | Opcional | Dónde dejar la bici cerca de cada espacio | https://data.buenosaires.gob.ar/dataset/bicicleteros-via-publica |
-| EcoBici tiempo real (GBFS) | Opcional (V2) | Disponibilidad de bicis en la app | https://data.buenosaires.gob.ar/dataset/api-transporte-publico |
+| EcoBici tiempo real (GBFS v3.0) | Sí, ya integrado | Bicis y anclajes disponibles ahora, sin claves | https://buenosaires.publicbikesystem.net/customer/gbfs/v3.0/station_status (protocolo: https://gbfs.org/documentation/reference/) |
 | Clima | Propuesto: Open-Meteo | Pronóstico del día | por confirmar |
 | Feriados | FALTA | Calendario de feriados | por definir |
 

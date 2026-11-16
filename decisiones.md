@@ -58,3 +58,11 @@ Qué probamos, qué descartamos y por qué. Las entradas más nuevas van arriba.
 **Qué aprendimos**
 - Una hipótesis tiene que poder salir mal. Si el resultado es obvio de antemano, no sirve.
 - Del cruce anterior nos quedamos con el uso de estaciones, ciclovías y comunas como unidad de análisis.
+
+## (16/11) · Disponibilidad en vivo desde el feed público GBFS
+
+**Qué decidimos.** Usar el feed público GBFS v3.0 de EcoBici (`buenosaires.publicbikesystem.net`) para mostrar las bicis y los anclajes libres de ahora, en lugar de la API de transporte con credenciales.
+
+**Por qué.** No pide claves ni registro, así que no dependemos de que nos las entreguen; se actualiza cada ~20 segundos; y el `station_id` coincide con el número oficial de cada estación, por lo que el cruce es exacto. El feed no admite pedidos desde el navegador (CORS), por eso lo consulta una función de Netlify.
+
+**Qué queda por saber.** 4 de las 110 estaciones de la zona no aparecen en el feed (probablemente fuera de servicio): para esas se muestra la estimación del modelo histórico y se avisa.

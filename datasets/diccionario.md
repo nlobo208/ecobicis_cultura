@@ -57,3 +57,10 @@ Fuente: GCBA, conteo de ciclistas 2013 a 2019. Solo 7 filas. Los numeros venian 
 
 ## Pendientes de descarga (ver readme.md)
 estaciones_bicicletas_publicas.csv y recorridos_realizados_2024.csv (cuando se descarguen, documentar aca sus columnas).
+
+## EcoBici en tiempo real (feed GBFS v3.0) · fuente en vivo, no se guarda como archivo
+Fuente: feed público de EcoBici de la Ciudad, sin claves. Protocolo: https://gbfs.org/documentation/reference/
+- `https://buenosaires.publicbikesystem.net/customer/gbfs/v3.0/station_status` (se actualiza cada ~20 s): por estación, `num_vehicles_available` (bicis), `num_docks_available` (anclajes libres), `num_vehicles_disabled`, `is_installed`, `is_renting`, `is_returning`.
+- `https://buenosaires.publicbikesystem.net/customer/gbfs/v3.0/station_information`: `station_id`, `name` (lista por idioma, con el número adelante: "002 - Retiro I"), `lat`, `lon`, `capacity`.
+- Cruce: `station_id` es el número oficial de la estación, el mismo que `numero` en estaciones_ecobici_pedalito.xlsx. El feed trae 392 estaciones; la app usa las 110 de las comunas 1, 2, 4 y 14. Al probarlo (16/11/2026), 4 de las 110 no figuraban en el feed (63 Reconquista, 172 Brasil, 108 Usina del Arte, 341 Comuna 4): para esas la app muestra la estimación.
+- Cómo se usa: netlify/functions/ecobici.mjs pide el feed desde el servidor (el feed no manda el encabezado CORS) y app/js/disponibilidad.js lo asocia a cada estación.
