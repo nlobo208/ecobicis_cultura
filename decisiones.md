@@ -72,3 +72,13 @@ Qué probamos, qué descartamos y por qué. Las entradas más nuevas van arriba.
 **Qué hicimos.** En los mapas de Inicio, Explorar y "¿Desde dónde salís?" lo que queda fuera de los 12 barrios con datos se pinta de gris desaturado, para que se entienda que ahí no hay información. El borde punteado marca el límite.
 
 **Cómo.** El límite sale del dataset oficial de barrios (datasets/barrios.geojson). Se recortó a los 12 barrios (app/data/zona_barrios.js). Los barrios vecinos no comparten vértices idénticos, así que se unieron en un solo contorno con la biblioteca polygon-clipping (una sola vez) para que la máscara no deje grietas. Este equipo no tiene Python: el recorte se hizo con Perl y la unión en el navegador; el script codigo/generar_zona_barrios.py hace el recorte con el mismo criterio y se puede correr donde haya Python (no genera el contorno unido).
+
+## (16/11) · Ficha de actividad, fichas de hotspots, recolección mensual con IA y pasaporte cultural
+
+**Ficha de actividad.** Al tocar una tarjeta de "Últimas fechas disponibles este mes" se abre la ficha de la actividad (no la del lugar): qué vas a ver, quiénes participan, desde cuándo, un dato curioso y el enlace oficial. Lo mismo para los 30 hotspots en la ficha del lugar. Si falta un dato, ese bloque no se muestra: nunca se inventa. Mientras una persona no lo verifique, se avisa "a confirmar".
+
+**Recolección mensual.** El día 15 de cada mes un flujo de GitHub busca con IA (Groq + búsqueda web) las actividades del mes siguiente y abre un Pull Request en borrador con un informe de dudas; las personas encargadas lo revisan y recién al hacer merge se publica. Detalle y diagrama en datasets/flujo_actividades_mensual.md.
+
+**Por qué Groq y por qué en borrador.** Se usa Groq porque es la clave que ya tenemos (no hace falta una cuenta paga de otro proveedor). Cada búsqueda web gasta mucho cupo del plan gratuito (100.000 a 160.000 tokens por llamada, con un límite de ~8.000 por minuto), por eso el flujo es lento pero entra en un día. Para las fichas fijas de los hotspots se usa Wikipedia y Wikidata, que gastan unos 700 tokens por lugar y dejan la fuente a la vista.
+
+**Pasaporte cultural (pirueta).** Cada lugar visitado suma un sello en la página de su barrio, y los hotspots que faltan quedan como huecos para descubrir. Al terminar un recorrido, los sellos nuevos se estampan con una animación. Hoy los sellos usan una forma base (anillo e iniciales); los dibujos se cargan en app/img/sellos/<id>.png y se avisan en app/data/sellos.js.

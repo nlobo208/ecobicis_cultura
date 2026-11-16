@@ -15,7 +15,9 @@ Object.entries(window.PEDALITO_FOTOS || {}).forEach(([id, f]) => { const l = LUG
 // Nombres de barrio como se escriben (el dataset los trae sin tildes y "Boca" en vez de "La Boca")
 const NOMBRE_BARRIO = { "San Nicolas": "San Nicolás", "Constitucion": "Constitución", "Boca": "La Boca" };
 [...LUGARES, ...(window.PEDALITO_ESTACIONES || [])].forEach(x => { if (NOMBRE_BARRIO[x.barrio]) x.barrio = NOMBRE_BARRIO[x.barrio]; });
-const ACTIVIDADES = window.PEDALITO_ACTIVIDADES || [];
+const ACTIVIDADES = (window.PEDALITO_ACTIVIDADES || []).filter(a => a.estado !== "borrador");   // los borradores de la IA no se muestran hasta que una persona los revise
+const FICHAS = window.PEDALITO_FICHAS || {};                    // fichas de los 30 hotspots (data/fichas.js)
+const SELLOS_ARTE = new Set((window.PEDALITO_SELLOS || []).map(String));   // sellos del pasaporte que ya tienen dibujo
 const ESTACIONES = window.PEDALITO_ESTACIONES;
 const PRED = window.PedalitoPrediccion, TEND = window.PedalitoTendencias, HOR = window.PedalitoHorarios;
 
@@ -51,7 +53,7 @@ const MAX_LISTA = 24;
 const CLAVE_ESTADO = "pedalito_final";
 const estado = Object.assign({
   email: "", nombre: "", intereses: [], km: 0, salidas: 0, visitados: [], destinos: [],
-  calificaciones: {}, guardados: [], historial: [], ultimo: null
+  calificaciones: {}, guardados: [], sellos: {}, historial: [], ultimo: null
 }, leerEstado());
 const plan = { modo: "sorpresa", minutos: 60, maxKm: 5, hasta: null, ids: [], km: 0, estaciones: null };
 
@@ -91,27 +93,27 @@ function mostrar() {
   if (pantalla !== "inicio") finalizado = false;
   // Si un desvío cambió la pantalla (por ejemplo, pedir la ubicación), la URL pasa a decir lo mismo que se ve:
   // si no, tocar "continuar" hacia #inicio no dispararía hashchange porque la URL ya diría #inicio.
-  const destino = pantalla === "lugar" && param ? `${pantalla}/${param}` : pantalla;
+  const destino = (pantalla === "lugar" || pantalla === "actividad") && param ? `${pantalla}/${param}` : pantalla;
   if (location.hash.slice(1) !== destino) history.replaceState(null, "", `#${destino}`);
 
   $$(".pantalla").forEach(s => s.classList.toggle("visible", s.id === pantalla));
   const conNav = TABS.includes(pantalla);
   $("#nav").classList.toggle("visible", conNav);
   document.querySelector(".app").classList.toggle("con-nav", conNav);
-  $("#atras").hidden = ["bienvenida", "intereses", "lugar", "cierre", "compartir"].includes(pantalla) || (finalizado && pantalla === "inicio");   // en el detalle la flecha va sobre la foto
+  $("#atras").hidden = ["bienvenida", "intereses", "lugar", "actividad", "cierre", "compartir"].includes(pantalla) || (finalizado && pantalla === "inicio");   // en el detalle la flecha va sobre la foto
   $$("#nav a").forEach(a => a.classList.toggle("activo", a.dataset.tab === pantalla));
   window.scrollTo(0, 0); pintarCaja();
   if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apaga el GPS
 
   ({ intereses: pintarIntereses, ubicacion: pintarUbicacion, inicio: pintarInicio, explorar: pintarExplorar,
-     lugar: () => pintarLugar(param), planificar: pintarPlanificar, recorrido: armarRecorrido,
+     lugar: () => pintarLugar(param), actividad: () => pintarActividad(param), pasaporte: pintarPasaporte, planificar: pintarPlanificar, recorrido: armarRecorrido,
      cierre: pintarCierre, perfil: pintarPerfil, compartir: pintarCompartir }[pantalla] || (() => {}))();
 }
 
 // ---------- Flecha para volver ----------
 // Si la persona ya navegó dentro de la app se usa el historial del navegador; si entró directo, va a la pantalla anterior del flujo.
 const PADRE = { cuenta: "bienvenida", intereses: "bienvenida", ubicacion: "intereses", inicio: "ubicacion", explorar: "inicio", lugar: "explorar",
-  planificar: "inicio", recorrido: "planificar", cierre: "recorrido", perfil: "inicio", compartir: "perfil" };
+  planificar: "inicio", recorrido: "planificar", cierre: "recorrido", perfil: "inicio", compartir: "perfil", actividad: "inicio", pasaporte: "perfil" };
 let navegaciones = 0, volviendo = false;
 window.addEventListener("hashchange", () => { if (volviendo) volviendo = false; else navegaciones++; mostrar(); });
 function volver() {
@@ -120,6 +122,7 @@ function volver() {
 }
 $("#atras").addEventListener("click", volver);
 $("#atras-lugar").addEventListener("click", volver);
+$("#atras-actividad").addEventListener("click", volver);
 
 // ---------- 00 · Bienvenida ----------
 // Sin cuenta por ahora (prototipo): "Comenzar a pedalear" entra como invitado y sigue con "¿Qué te mueve?".
@@ -337,13 +340,86 @@ document.addEventListener("click", e => {
 });
 
 /** Tarjeta de los carruseles del Home. `lugar` puede faltar (actividad sin lugar en el dataset): entonces no hay link ni "+". */
-function tarjetaLugarHTML({ lugar, etiqueta, titulo, metas, textoSinImagen }) {
+function tarjetaLugarHTML({ lugar, etiqueta, titulo, metas, textoSinImagen, enlace }) {
   const contenido = `
     <div class="foto ${lugar?.img ? "" : "sin-imagen"}" ${lugar?.img ? `style="background-image:url('${fotoUrl(lugar)}')"` : ""}>
       <span class="tag">${esc(etiqueta)}</span>${lugar?.img ? "" : esc(textoSinImagen || "")}
     </div>
     <div class="info"><strong>${esc(titulo)}</strong>${metas.map(m => `<span class="meta">${esc(m)}</span>`).join("")}</div>`;
-  return `<div class="tarjeta-lugar">${lugar ? `<a class="enlace" href="#lugar/${lugar.id}">${contenido}</a>${botonMas(lugar.id)}` : `<div class="enlace">${contenido}</div>`}</div>`;
+  return `<div class="tarjeta-lugar">${lugar ? `<a class="enlace" href="${enlace || `#lugar/${lugar.id}`}">${contenido}</a>${botonMas(lugar.id)}` : `<div class="enlace">${contenido}</div>`}</div>`;
+}
+
+// ---------- Ficha: qué vas a ver, quiénes, desde cuándo, dato curioso y enlace (actividades y lugares) ----------
+// Los textos los arma la IA con fuentes (codigo/recolectar_actividades.ps1) y una persona los revisa; mientras no estén
+// verificados se avisa. Si falta un dato, ese bloque no se muestra (nunca se inventa).
+function bloquesFicha({ sinopsis, quienes, tituloQuienes, desde, tituloDesde, curioso, url, aConfirmar }) {
+  const b = [];
+  if (sinopsis) b.push(`<h2>Qué vas a ver</h2><p class="texto">${esc(sinopsis)}</p>`);
+  if (quienes?.length) b.push(`<h2>${esc(tituloQuienes)}</h2><div class="chips-ficha">${quienes.map(q => `<span>${esc(q)}</span>`).join("")}</div>`);
+  if (desde) b.push(`<h2>${esc(tituloDesde)}</h2><p class="texto">${esc(desde)}</p>`);
+  if (curioso) b.push(`<div class="dato-curioso"><strong>Dato curioso</strong><p>${esc(curioso)}</p></div>`);
+  if (url && /^https?:\/\//.test(url)) b.push(`<a class="boton contorno enlace-info" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Más información <span aria-hidden="true">↗</span></a>`);
+  if (b.length && aConfirmar) b.push(`<p class="nota">Información armada con ayuda de IA y a confirmar: revisá el sitio oficial antes de ir.</p>`);
+  return b.join("");
+}
+const fichaDeLugar = l => { const f = FICHAS[l.id]; return f ? bloquesFicha({ sinopsis: f.sinopsis, quienes: f.referentes, tituloQuienes: "Quiénes están detrás", desde: f.desde,
+  tituloDesde: "Desde cuándo", curioso: f.dato_curioso, url: f.url_oficial, aConfirmar: !f.verificado }) : ""; };
+
+// ---------- 12 · Detalle de actividad ----------
+const porActividad = id => ACTIVIDADES.find(a => a.id === id);
+function pintarActividad(id) {
+  const a = porActividad(id);
+  if (!a) { location.hash = "inicio"; return; }
+  const l = porId(a.lugar_id);
+  $("#act-hero").style.backgroundImage = l?.img ? `url("${fotoUrl(l)}")` : "";
+  $("#act-tipo").textContent = a.tipo;
+  $("#act-nombre").textContent = a.nombre;
+  const dm = f => `${f.slice(8, 10)}/${f.slice(5, 7)}`;
+  const fechas = a.desde && a.hasta ? `Del ${dm(a.desde)} al ${dm(a.hasta)}` : a.hasta ? `Hasta el ${dm(a.hasta)}` : a.desde ? `Desde el ${dm(a.desde)}` : "";
+  const cuando = a.abre ? HOR.resumenActividad(a.dias, a.abre, a.cierra) : (a.dias || "");
+  $("#act-meta").textContent = [fechas, cuando, a.precio].filter(Boolean).join(" · ");
+  const donde = $("#act-donde");
+  donde.textContent = `⌖ ${a.lugar}${l ? ` · ${l.barrio} · Ver el lugar →` : ""}`;
+  donde.href = l ? `#lugar/${l.id}` : "#actividad/" + a.id;
+  $("#act-ficha").innerHTML = bloquesFicha({ sinopsis: a.sinopsis, quienes: a.artistas, tituloQuienes: "Quiénes participan", desde: a.trayectoria,
+    tituloDesde: "Desde cuándo", curioso: a.dato_curioso, url: a.url_oficial, aConfirmar: !a.ficha_verificada || a.estado !== "verificada" })
+    || `<p class="nota">Estamos sumando más información de esta actividad. Mientras tanto, mirá el lugar o consultá con ellos antes de ir.</p>`;
+  const sumar = $("#act-sumar");
+  sumar.hidden = !l;
+  if (l) {
+    sumar.firstChild.textContent = "Sumar el lugar al recorrido ";
+    sumar.onclick = () => {
+      if (!estado.destinos.includes(l.id) && estado.destinos.length < MAX_DESTINOS) estado.destinos.push(l.id);
+      plan.modo = "destino"; plan.tramos = null; guardarEstado(); location.hash = "planificar";
+    };
+  }
+}
+
+// ---------- 13 · Pasaporte cultural ----------
+// Un sello por cada lugar visitado, en la página de su barrio. Los hotspots que faltan aparecen como huecos para descubrir.
+// El dibujo de cada sello se carga en img/sellos/<id>.png y se avisa en data/sellos.js; mientras tanto se usa la forma base.
+const TINTAS = ["#203ae9", "#f90083", "#f76c09", "#00baf1"];
+const iniciales = nombre => nombre.replace(/\([^)]*\)/g, "").split(/\s+/).filter(w => w && !/^(de|del|la|el|los|las|y|en)$/i.test(w)).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+function selloHTML(l, visitado, extra = "") {
+  const f = visitado && estado.sellos?.[l.id] ? new Date(estado.sellos[l.id]).toLocaleDateString("es-AR", { day: "numeric", month: "short" }) : "";
+  const interior = visitado && SELLOS_ARTE.has(String(l.id)) ? `<img src="img/sellos/${l.id}.png" alt="">` : `<b>${esc(iniciales(l.nombre))}</b>`;
+  return `<div class="sello ${visitado ? "" : "vacio"} ${extra}" ${visitado ? "" : 'aria-label="Sello por descubrir"'}>
+    <div class="sello-marca">${visitado ? interior : "?"}</div><span>${esc(l.nombre)}</span>${f ? `<small>${esc(f)}</small>` : ""}</div>`;
+}
+function pintarPasaporte() {
+  const visitados = estado.visitados.map(porId).filter(Boolean), vistos = new Set(visitados.map(l => l.id));
+  const hotspots = LUGARES.filter(l => l.verificado);
+  const paginas = new Map(ZONA.barrios.map(b => [sinTildes(b), { nombre: b, sellos: [], faltan: [] }]));
+  const pagina = l => { const k = sinTildes(l.barrio); if (!paginas.has(k)) paginas.set(k, { nombre: l.barrio, sellos: [], faltan: [] }); return paginas.get(k); };
+  visitados.forEach(l => pagina(l).sellos.push(l));
+  hotspots.filter(l => !vistos.has(l.id)).forEach(l => pagina(l).faltan.push(l));
+  const deLosHotspots = hotspots.filter(l => vistos.has(l.id)).length;
+  $("#pasaporte-cuenta").textContent = `${visitados.length} ${visitados.length === 1 ? "sello" : "sellos"} · ${deLosHotspots} de ${hotspots.length} hotspots`;
+  $("#pasaporte-paginas").innerHTML = [...paginas.values()].filter(p => p.sellos.length + p.faltan.length).map((p, i) => `
+    <section class="pagina-pasaporte" style="--tinta:${TINTAS[i % TINTAS.length]}">
+      <header><h2>${esc(p.nombre)}</h2><span>${p.sellos.length} ${p.sellos.length === 1 ? "sello" : "sellos"}</span></header>
+      <div class="sellos">${p.sellos.map(l => selloHTML(l, true)).join("")}${p.faltan.map(l => selloHTML(l, false)).join("")}</div>
+    </section>`).join("") || `<p class="nota">Todavía no hay sellos. Hacé tu primer recorrido.</p>`;
 }
 
 // ---------- 03 · Mapa del Home ----------
@@ -487,7 +563,7 @@ function pintarFechas() {
     const etiqueta = a.hasta ? `HASTA ${a.hasta.slice(8, 10)}/${a.hasta.slice(5, 7)}` : a.tipo.toUpperCase();
     const cuando = a.abre ? HOR.resumenActividad(a.dias, a.abre, a.cierra) : "";
     const dato = cuando ? `${a.lugar} · ${cuando}` : a.lugar;
-    return tarjetaLugarHTML({ lugar, etiqueta, titulo: a.nombre, metas: [dato], textoSinImagen: a.tipo });
+    return tarjetaLugarHTML({ lugar, etiqueta, titulo: a.nombre, metas: [dato], textoSinImagen: a.tipo, enlace: `#actividad/${a.id}` });   // abre la ficha de la actividad
   }).join("") || `<p class="nota">No hay fechas cargadas.</p>`;
 }
 
@@ -672,6 +748,7 @@ function pintarLugar(id) {
   $("#detalle-meta").textContent = `${fmtKm(desdeOrigen(l))} · ${l.barrio}`;
   $("#detalle-desc").textContent = `${l.direccion}. Estación EcoBici más cercana a ${l.dist_m} m.`;
   pintarHorarios(l);
+  $("#detalle-ficha").innerHTML = fichaDeLugar(l);
   const credito = $("#detalle-credito");
   credito.hidden = !l.foto;
   if (l.foto) credito.innerHTML = `Foto: ${esc(l.foto.autor)} · <a href="${esc(l.foto.pagina)}" target="_blank" rel="noopener">${esc(l.foto.licencia)}</a> · Wikimedia Commons`;
@@ -1282,6 +1359,14 @@ function pintarCierre() {
   const u = estado.ultimo; if (!u) { location.hash = "planificar"; return; }
   $("#cierre-km").textContent = fmtKm(u.km);
   $("#cierre-lugares").textContent = `${u.ids.length} lugar${u.ids.length > 1 ? "es" : ""} visitado${u.ids.length > 1 ? "s" : ""}`;
+  // Pirueta: cada lugar nuevo se estampa en el pasaporte (solo la primera vez que se muestra este cierre)
+  const nuevos = u.ids.filter(id => !estado.visitados.includes(id)).map(porId).filter(Boolean), caja = $("#sellos-nuevos");
+  $("#sellos-titulo").hidden = caja.hidden = !nuevos.length;
+  if (nuevos.length && !caja.dataset.listo) {
+    caja.dataset.listo = "1";
+    caja.innerHTML = nuevos.map((l, i) => `<div style="--d:${(0.35 + i * 0.5).toFixed(2)}s;--tinta:${TINTAS[i % TINTAS.length]}">${selloHTML(l, true, "estampa")}</div>`).join("");
+    vibrar([30, 80, 30]);
+  }
   $("#calificar").innerHTML = u.ids.map(porId).map(l => {
     const n = estado.calificaciones[l.id] || 0;
     return `<div class="calificacion"><span>${esc(l.nombre)}</span><span class="estrellas" role="group" aria-label="Calificar ${esc(l.nombre)}">
@@ -1298,6 +1383,9 @@ $("#guardar-volver").addEventListener("click", () => {
   estado.km += u.km; estado.salidas += 1;
   estado.historial.push({ fecha: new Date().toISOString(), km: u.km });
   u.ids.forEach(id => { if (!estado.visitados.includes(id)) estado.visitados.push(id); });
+  estado.sellos = estado.sellos || {};
+  u.ids.forEach(id => { if (!estado.sellos[id]) estado.sellos[id] = new Date().toISOString(); });
+  $("#sellos-nuevos").dataset.listo = "";                 // el próximo cierre vuelve a estampar
   estado.destinos = []; plan.hasta = null; plan.modo = "sorpresa";
   guardarEstado();
   location.hash = "compartir";                  // el cierre del viaje sigue en Compartir
@@ -1310,11 +1398,12 @@ function kmDesde(dias) {
 }
 function pintarPerfil() {
   $("#km-total").textContent = fmtKm(estado.km);
-  $("#actividad").innerHTML = [
+  $("#actividad-resumen").innerHTML = [
     ["naranja", fmtKm(kmDesde(7)), "Esta semana"],
     ["verde", fmtKm(kmDesde(30)), "Últimos 30 días"],
     ["celeste", `${estado.salidas} salidas`, "Desde que empezaste"]
   ].map(([c, t, d]) => `<div class="tarjeta-apilada ${c}"><strong>${t}</strong><span>${d}</span></div>`).join("");
+  $("#perfil-sellos").textContent = `${estado.visitados.length} ${estado.visitados.length === 1 ? "sello" : "sellos"} · ${LUGARES.filter(l => l.verificado && estado.visitados.includes(l.id)).length} de ${LUGARES.filter(l => l.verificado).length} hotspots`;
   const favoritos = estado.guardados.map(porId).filter(Boolean);
   $("#preferidos").innerHTML = favoritos.map(l => tarjetaLugarHTML({ lugar: l, etiqueta: "♥ PREFERIDO", titulo: l.nombre, textoSinImagen: l.categoria,
     metas: [`${l.categoria} · ${l.barrio}`] })).join("");

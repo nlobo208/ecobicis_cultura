@@ -448,3 +448,44 @@ a { color: inherit; }
 .lugar-pin { z-index: 1; width: 22px; height: 22px; padding: 0; border: 3px solid #fff; border-radius: 6px; background: var(--rosa); box-shadow: 0 2px 6px rgba(9, 41, 87, .35); cursor: pointer; }
 .est-pin { z-index: 2; }
 .leyenda-bicis i.cuadrado { border-radius: 4px; background: var(--rosa); }
+
+/* ---------- Ficha de actividad y de lugar: qué vas a ver, quiénes, desde cuándo, dato curioso, enlace ---------- */
+.ficha h2 { margin: 18px 0 8px; font-size: 16px; }
+.chips-ficha { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips-ficha span { padding: 7px 14px; border: 2px solid var(--azul); border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--noche); }
+.dato-curioso { margin-top: 16px; padding: 16px 18px; border-radius: 22px; background: var(--noche); color: var(--crema); }
+.dato-curioso strong { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--celeste); }
+.dato-curioso p { margin: 6px 0 0; font-size: 15px; font-weight: 600; line-height: 1.35; }
+.enlace-info { margin-top: 16px; text-decoration: none; }
+a.donde { display: block; margin: 6px 0 0; color: var(--azul); font-size: 14px; font-weight: 700; text-decoration: none; }
+#actividad .ficha { display: flex; flex-direction: column; }
+
+/* ---------- Pasaporte cultural: la forma (los dibujos de los sellos se cargan en img/sellos/) ---------- */
+.pasaporte-tapa { display: flex; flex-direction: column; gap: 4px; min-height: 150px; justify-content: flex-end; padding: 20px; border-radius: 24px; background: var(--mesh); color: var(--crema); position: relative; isolation: isolate; }
+.pasaporte-tapa::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
+.pasaporte-tapa strong { font-size: 28px; line-height: 1.05; letter-spacing: -.02em; }
+.pasaporte-tapa span { font-size: 14px; font-weight: 600; }
+.pasaporte-entrada { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 0 22px; border: 2px solid var(--azul); border-radius: 18px; color: var(--noche); font-weight: 700; text-decoration: none; }
+.pagina-pasaporte { padding: 16px; border: 2px solid var(--tinta, var(--azul)); border-radius: 24px; background: #fff; margin-top: 4px; }
+.pagina-pasaporte header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.pagina-pasaporte h2 { margin: 0; font-size: 17px; color: var(--tinta, var(--noche)); }
+.pagina-pasaporte header span { font-size: 13px; font-weight: 700; color: var(--texto-suave); }
+.sellos, .sellos-nuevos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 8px; }
+.sello { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; color: var(--noche); }
+.sello span { font-size: 12px; font-weight: 700; line-height: 1.15; }
+.sello small { font-size: 11px; font-weight: 600; color: var(--texto-suave); }
+.sello-marca {
+  width: 76px; height: 76px; display: grid; place-items: center; border: 3px solid var(--tinta, var(--azul)); border-radius: 50%;
+  box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 6px var(--tinta, var(--azul)); color: var(--tinta, var(--azul));
+  transform: rotate(-6deg); font-size: 22px; letter-spacing: .02em;
+}
+.sello-marca img { width: 100%; height: 100%; object-fit: contain; }
+.sello.vacio { opacity: .55; }
+.sello.vacio .sello-marca { border-style: dashed; box-shadow: none; color: var(--texto-suave); border-color: var(--borde); transform: none; }
+
+/* La pirueta: el sello se estampa con un golpe y una onda de tinta */
+.estampa .sello-marca { animation: estampar .7s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: var(--d, 0s); position: relative; }
+.estampa .sello-marca::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid var(--tinta, var(--azul)); opacity: 0; animation: tinta .9s ease-out both; animation-delay: var(--d, 0s); }
+@keyframes estampar { 0% { transform: scale(2.4) rotate(-26deg); opacity: 0; } 55% { transform: scale(.9) rotate(-3deg); opacity: 1; } 100% { transform: scale(1) rotate(-6deg); opacity: 1; } }
+@keyframes tinta { 0% { transform: scale(1); opacity: .6; } 100% { transform: scale(1.7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .estampa .sello-marca, .estampa .sello-marca::after { animation: none; } }

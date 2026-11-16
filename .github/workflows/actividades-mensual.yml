@@ -1,0 +1,65 @@
+# Recolección mensual de actividades culturales con IA (borrador para revisar).
+# El día 15 de cada mes busca las actividades del mes siguiente en los 30 hotspots (Groq + búsqueda web),
+# las deja en un Pull Request y las personas encargadas las revisan antes de publicar.
+# Documentación y diagrama: datasets/flujo_actividades_mensual.md
+name: Actividades del mes siguiente (borrador con IA)
+
+on:
+  schedule:
+    - cron: "0 12 15 * *"      # día 15 de cada mes, 12:00 UTC (09:00 en Buenos Aires): ~2 semanas antes de fin de mes
+    - cron: "0 12 28 * *"      # día 28: recordatorio si el Pull Request sigue sin revisar
+  workflow_dispatch:           # también se puede lanzar a mano desde la pestaña Actions
+    inputs:
+      mes:
+        description: "Mes a buscar (AAAA-MM). Vacío = el mes siguiente"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  recolectar:
+    if: github.event.schedule != '0 12 28 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350       # el plan gratuito de Groq limita los tokens por minuto: la búsqueda va despacio
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Buscar actividades con Groq (borrador)
+        shell: pwsh
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MES: ${{ inputs.mes }}
+        run: |
+          if ($env:MES) { ./codigo/recolectar_actividades.ps1 -Modo actividades -Mes $env:MES }
+          else { ./codigo/recolectar_actividades.ps1 -Modo actividades }
+
+      - name: Abrir el Pull Request para revisar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          INFORME=$(ls -t datasets_procesados/informe_actividades_*.md | head -1)
+          S=$(basename "$INFORME" .md | sed 's/informe_actividades_//')
+          git config user.name "pedalito-bot"
+          git config user.email "pedalito-bot@users.noreply.github.com"
+          git checkout -b "actividades/$S"
+          git add "app/data/actividades_$S.js" app/data/meses.js "datasets_procesados/actividades_$S.json" "$INFORME"
+          git commit -m "Actividades de $S (borrador de la IA, a revisar)"
+          git push --force origin "actividades/$S"
+          gh pr create --base main --head "actividades/$S" \
+            --title "Actividades $S (borrador de la IA, a revisar)" --body-file "$INFORME" \
+          || gh pr edit "actividades/$S" --body-file "$INFORME"
+
+  recordatorio:
+    if: github.event.schedule == '0 12 28 * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar en los Pull Requests de actividades que siguen abiertos
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for N in $(gh pr list --repo "$REPO" --state open --json number,headRefName --jq '.[] | select(.headRefName | startswith("actividades/")) | .number'); do
+            gh pr comment "$N" --repo "$REPO" --body "Recordatorio: el mes está por terminar y estas actividades todavía no se revisaron. Si no se hace el merge antes del día 1, la app no muestra el mes nuevo."
+          done

@@ -1,0 +1,1 @@
+Poné acá los sellos del pasaporte: <id del lugar>.png (cuadrado, fondo transparente) y sumá el id a app/data/sellos.js.

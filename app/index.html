@@ -101,7 +101,7 @@
           </ul>
         </div>
 
-        <h2>Últimas fechas disponibles</h2>
+        <h2>Últimas fechas disponibles este mes</h2>
         <div class="carrusel" id="fechas"></div>
 
         <h2>Para vos</h2>
@@ -225,6 +225,8 @@
         <strong id="cierre-km">0 km</strong>
         <span id="cierre-lugares"></span>
       </div>
+      <h2 id="sellos-titulo" hidden>Sellos nuevos en tu pasaporte</h2>
+      <div class="sellos-nuevos" id="sellos-nuevos" hidden></div>
       <h2>¿Qué te parecieron?</h2>
       <div id="calificar"></div>
       <p class="nota">Tus ratings afinan futuras recomendaciones.</p>
@@ -243,7 +245,9 @@
         <a class="mini" href="#compartir">Compartir ↗</a>
       </div>
       <h2>Actividad</h2>
-      <div class="apiladas" id="actividad"></div>
+      <div class="apiladas" id="actividad-resumen"></div>
+      <h2>Tu pasaporte cultural</h2>
+      <a class="pasaporte-entrada" href="#pasaporte"><span id="perfil-sellos">0 sellos</span><span aria-hidden="true">Abrir →</span></a>
       <h2>Tus preferidos</h2>
       <div class="carrusel" id="preferidos"></div>
       <p class="nota" id="preferidos-vacio" hidden>Todavía no marcaste ninguno. Tocá el ♡ en un lugar para guardarlo acá.</p>
@@ -284,9 +288,38 @@
       <p class="sub" id="detalle-meta"></p>
       <p class="texto" id="detalle-desc"></p>
       <div class="horarios" id="detalle-horarios"></div>
+      <div id="detalle-ficha"></div>
       <p class="credito" id="detalle-credito" hidden></p>
     </div>
     <button class="boton fijo" id="detalle-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 12 · Detalle de actividad: qué vas a ver, quiénes, desde cuándo, dato curioso y enlace -->
+  <section class="pantalla detalle" id="actividad">
+    <div class="hero" id="act-hero">
+      <button class="redondo izq" id="atras-actividad" type="button" aria-label="Volver">←</button>
+    </div>
+    <div class="ficha">
+      <span class="etiqueta-rosa" id="act-tipo"></span>
+      <h1 id="act-nombre"></h1>
+      <p class="sub" id="act-meta"></p>
+      <a class="donde" id="act-donde" href="#"></a>
+      <div id="act-ficha"></div>
+    </div>
+    <button class="boton fijo" id="act-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 13 · Pasaporte cultural: un sello por cada lugar que visitaste, ordenados por barrio -->
+  <section class="pantalla" id="pasaporte">
+    <div class="contenido">
+      <div class="pasaporte-tapa" role="img" aria-label="Tapa del pasaporte cultural">
+        <p class="etiqueta">Pedalito</p>
+        <strong>Pasaporte cultural</strong>
+        <span id="pasaporte-cuenta"></span>
+      </div>
+      <p class="nota">Cada lugar que visitás en un recorrido suma su sello. Los que faltan son los hotspots de cada barrio.</p>
+      <div id="pasaporte-paginas"></div>
+    </div>
   </section>
 
   <!-- Aparece arriba de la barra de inicio cuando hay lugares para visitar (o un recorrido a medio hacer) -->
@@ -310,6 +343,10 @@
 <script src="data/estaciones_modelo.js"></script>
 <script src="data/ciclovias.js"></script>
 <script src="data/actividades.js"></script>
+<script src="data/meses.js" onerror="void 0"></script>
+<script>(window.PEDALITO_MESES || []).forEach(function (m) { document.write('<script src="data/actividades_' + m + '.js" onerror="void 0"><\/script>'); });</script>
+<script src="data/fichas.js" onerror="void 0"></script>
+<script src="data/sellos.js"></script>
 <script src="data/zona_barrios.js" onerror="void 0"></script>
 <script src="js/zona.js"></script>
 <script src="js/horarios.js"></script>
