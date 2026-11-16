@@ -66,3 +66,9 @@ Qué probamos, qué descartamos y por qué. Las entradas más nuevas van arriba.
 **Por qué.** No pide claves ni registro, así que no dependemos de que nos las entreguen; se actualiza cada ~20 segundos; y el `station_id` coincide con el número oficial de cada estación, por lo que el cruce es exacto. El feed no admite pedidos desde el navegador (CORS), por eso lo consulta una función de Netlify.
 
 **Qué queda por saber.** 4 de las 110 estaciones de la zona no aparecen en el feed (probablemente fuera de servicio): para esas se muestra la estimación del modelo histórico y se avisa.
+
+## (16/11) · Zona cubierta: gris fuera de los 12 barrios
+
+**Qué hicimos.** En los mapas de Inicio, Explorar y "¿Desde dónde salís?" lo que queda fuera de los 12 barrios con datos se pinta de gris desaturado, para que se entienda que ahí no hay información. El borde punteado marca el límite.
+
+**Cómo.** El límite sale del dataset oficial de barrios (datasets/barrios.geojson). Se recortó a los 12 barrios (app/data/zona_barrios.js). Los barrios vecinos no comparten vértices idénticos, así que se unieron en un solo contorno con la biblioteca polygon-clipping (una sola vez) para que la máscara no deje grietas. Este equipo no tiene Python: el recorte se hizo con Perl y la unión en el navegador; el script codigo/generar_zona_barrios.py hace el recorte con el mismo criterio y se puede correr donde haya Python (no genera el contorno unido).

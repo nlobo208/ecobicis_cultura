@@ -64,3 +64,8 @@ Fuente: feed público de EcoBici de la Ciudad, sin claves. Protocolo: https://gb
 - `https://buenosaires.publicbikesystem.net/customer/gbfs/v3.0/station_information`: `station_id`, `name` (lista por idioma, con el número adelante: "002 - Retiro I"), `lat`, `lon`, `capacity`.
 - Cruce: `station_id` es el número oficial de la estación, el mismo que `numero` en estaciones_ecobici_pedalito.xlsx. El feed trae 392 estaciones; la app usa las 110 de las comunas 1, 2, 4 y 14. Al probarlo (16/11/2026), 4 de las 110 no figuraban en el feed (63 Reconquista, 172 Brasil, 108 Usina del Arte, 341 Comuna 4): para esas la app muestra la estimación.
 - Cómo se usa: netlify/functions/ecobici.mjs pide el feed desde el servidor (el feed no manda el encabezado CORS) y app/js/disponibilidad.js lo asocia a cada estación.
+
+## barrios.geojson (original) · límites de los barrios de CABA
+Fuente: BA Data, Barrios (https://data.buenosaires.gob.ar/dataset/barrios), descargado el 16/11/2026 de https://cdn.buenosaires.gob.ar/datosabiertos/datasets/ministerio-de-educacion/barrios/barrios.geojson. Sistema de coordenadas CRS84 (lon, lat).
+48 barrios (polígonos). Campos: id, objeto, nombre (sin tildes, "La Boca" y "Nueva Pompeya" con ese nombre), comuna (1 a 15), perimetro_, area_metro.
+Uso: se recorta a los 12 barrios que cubre la herramienta (Palermo, Recoleta, Retiro, San Nicolás, Puerto Madero, Monserrat, San Telmo, Constitución, La Boca, Barracas, Parque Patricios, Nueva Pompeya) y se genera app/data/zona_barrios.js. La app pinta de gris desaturado lo que queda fuera de esos barrios (sin datos) y usa el recorte para validar el punto de salida. Las 110 estaciones usadas caen dentro; de los 3.390 lugares, 2 quedan justo afuera del borde.
