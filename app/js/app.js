@@ -164,7 +164,7 @@ function pintarIntereses() {
     `<button class="chip ${estado.intereses.includes(i) ? "activo" : ""}" data-interes="${esc(i)}" aria-pressed="${estado.intereses.includes(i)}">${esc(i)}</button>`).join("");
   const n = estado.intereses.length;
   $("#guardar-intereses").disabled = n < MIN_INTERESES || n > 5;
-  $("#guardar-intereses").firstChild.textContent = n ? `Guardar intereses · ${n} ` : "Guardar intereses ";
+  $("#guardar-intereses").firstChild.textContent = n ? `Guardar intereses · ${n}` : "Guardar intereses";
 }
 $("#chips-intereses").addEventListener("click", e => {
   const i = e.target.dataset.interes; if (!i) return;
@@ -395,15 +395,17 @@ function pintarActividad(id) {
   const cuando = a.abre ? HOR.resumenActividad(a.dias, a.abre, a.cierra) : (a.dias || "");
   $("#act-meta").textContent = [fechas, cuando, a.precio].filter(Boolean).join(" · ");
   const donde = $("#act-donde");
-  donde.textContent = `⌖ ${a.lugar}${l ? ` · ${l.barrio} · Ver el hotspot →` : ""}`;
-  donde.href = l ? `#lugar/${l.id}` : "#actividad/" + a.id;
+  donde.textContent = `⌖ ${a.lugar}${l ? ` · ${l.barrio}` : ""}`;
+  const ver = $("#act-ver");
+  ver.hidden = !l;
+  if (l) ver.href = `#lugar/${l.id}`;
   $("#act-ficha").innerHTML = bloquesFicha({ sinopsis: a.sinopsis, quienes: a.artistas, tituloQuienes: "Quiénes participan", desde: a.trayectoria,
     tituloDesde: "Desde cuándo", curioso: a.dato_curioso, url: a.url_oficial, aConfirmar: !a.ficha_verificada || a.estado !== "verificada" })
     || `<p class="nota">Estamos sumando más información de esta actividad. Mientras tanto, mirá el hotspot o consultá con ellos antes de ir.</p>`;
   const sumar = $("#act-sumar");
   sumar.hidden = !l;
   if (l) {
-    sumar.firstChild.textContent = "Sumar el hotspot al recorrido ";
+    sumar.textContent = "Sumar el hotspot al recorrido";
     sumar.onclick = () => {
       if (!estado.destinos.includes(l.id) && estado.destinos.length < MAX_DESTINOS) estado.destinos.push(l.id);
       plan.modo = "destino"; plan.tramos = null; guardarEstado(); location.hash = "planificar";
@@ -526,7 +528,7 @@ function pintarLugaresHome() {
     const el = document.createElement("button"); el.type = "button"; el.className = "lugar-pin"; el.setAttribute("aria-label", l.nombre);
     el.addEventListener("click", ev => {
       ev.stopPropagation();
-      new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br><a href="#lugar/${l.id}">Ver hotspot →</a>`).addTo(mapaHome);
+      new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br><a href="#lugar/${l.id}">Ver hotspot</a>`).addTo(mapaHome);
     });
     marcasLugares.push(new maplibregl.Marker({ element: el }).setLngLat([l.lon, l.lat]).addTo(mapaHome));
   });
@@ -654,7 +656,7 @@ function pintarExplorar({ masLugares = false } = {}) {
     <a class="tarjeta-apilada ${COLORES[i % COLORES.length]}" href="#lugar/${l.id}">
       <strong>${esc(l.nombre)}</strong>
       <span>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))} · ${esc(l.barrio)}</span>
-      <span class="ver">Ver hotspot →</span>
+      <span class="ver">Ver hotspot</span>
     </a>`).join("");
   $("#ver-mas").hidden = lista.length <= mostrados.length;
   $("#ver-mas").textContent = `Ver más hotspots (${Math.min(MAX_LISTA, lista.length - mostrados.length)} más)`;
@@ -713,7 +715,7 @@ function pintarMapaExplorar(lista, reencuadrar = true) {
     });
     mapaExp.on("click", "lugares", e => {
       const f = e.features[0].properties;
-      new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat).setHTML(`<strong>${esc(f.nombre)}</strong><br><a href="#lugar/${f.id}">Ver hotspot →</a>`).addTo(mapaExp);
+      new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat).setHTML(`<strong>${esc(f.nombre)}</strong><br><a href="#lugar/${f.id}">Ver hotspot</a>`).addTo(mapaExp);
     });
   } else {
     geoPendiente = geo; mapaExp.resize();
@@ -1258,7 +1260,7 @@ function pintarPaso() {
   const distancia = guia.activa && guia.restante != null ? `faltan ${fmtM(guia.restante)}` : (p.metros ? fmtM(p.metros) : "");
   $("#paso-meta").textContent = [p.modo === "bici" ? "En bici" : "A pie", distancia, esEstacion && p.est ? dispTexto(p.est, clave) : "",
     guia.ia ? "Guía por IA" : "Guía automática", guia.activa && guia.sinGPS ? "Sin GPS: avanzá con el botón" : ""].filter(Boolean).join(" · ");
-  $("#iniciar").firstChild.textContent = `${etiquetaBoton()} `;
+  $("#iniciar").firstChild.textContent = etiquetaBoton();
 }
 /** Lleva el anillo (y, si ya arrancó la guía sin GPS, la cámara) al punto del paso actual. */
 function centrarPaso(mover = true) {

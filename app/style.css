@@ -691,3 +691,40 @@ a.donde, .enlace-info { color: var(--boton); }
 .calificacion > strong { font-size: 16px; font-weight: 800; }
 .calificacion .pregunta { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; }
 .calificacion .pregunta > span:first-child { flex: 1; min-width: 0; }
+
+/* ---------- Ficha de actividad: dónde es (texto) y "Ver hotspot" como botón aparte, más abajo ---------- */
+p.donde { margin: 6px 0 0; color: var(--texto-suave); font-size: 14px; font-weight: 600; }
+#act-ver { margin-top: 22px; }
+#act-ver[hidden] { display: none; }
+
+/* ---------- Botón "+" / "✓" de las tarjetas: la cruz se dibuja con líneas para quedar exactamente en el centro ---------- */
+.mas { position: absolute; font-size: 0; color: var(--noche); }
+.mas::before, .mas::after { content: ""; position: absolute; left: 50%; top: 50%; background: currentColor; border-radius: 2px; transform: translate(-50%, -50%); }
+.mas::before { width: 16px; height: 3px; }
+.mas::after { width: 3px; height: 16px; }
+.mas[aria-pressed="true"] { color: var(--crema); }
+.mas[aria-pressed="true"]::before { display: none; }
+.mas[aria-pressed="true"]::after { width: 7px; height: 13px; background: none; border: solid currentColor; border-width: 0 3px 3px 0; border-radius: 0; transform: translate(-50%, -60%) rotate(45deg); }
+.mas[aria-pressed="true"] { font-size: 0; }
+
+/* ---------- Tarjetas de lista: solo el borde lleva color; al pasar el cursor se rellenan y crecen un 10 % ---------- */
+.tarjeta-apilada, .apiladas .tarjeta-apilada { --c: #1a35e6; --t: #d9e2ff; background: var(--crema); border: 2px solid var(--c); }
+.tarjeta-apilada.rosa, .apiladas .tarjeta-apilada.rosa { --c: #e30077; --t: #ffd6ea; }
+.tarjeta-apilada.noche, .apiladas .tarjeta-apilada.noche { --c: #0b192c; --t: #e3e8f2; }
+.tarjeta-apilada.naranja, .apiladas .tarjeta-apilada.naranja { --c: #e0690a; --t: #ffe0bf; }
+.tarjeta-apilada.verde, .apiladas .tarjeta-apilada.verde { --c: #19a64a; --t: #c9f1d6; }
+.apiladas a.tarjeta-apilada, .apiladas.foco a.tarjeta-apilada {
+  cursor: pointer; transition: transform .1s linear, opacity .15s linear, background-color .18s ease, scale .18s ease;
+}
+@media (hover: hover) {
+  .apiladas a.tarjeta-apilada:hover, .apiladas a.tarjeta-apilada:focus-visible { background: var(--t); scale: 1.1; z-index: 2; }
+  .apiladas.foco a.tarjeta-apilada:hover, .apiladas.foco a.tarjeta-apilada:focus-visible { transform: none; }   /* la tarjeta que ya crece por estar en foco no suma: queda en +10 % y no se corta en el borde */
+}
+@media (prefers-reduced-motion: reduce) { .apiladas a.tarjeta-apilada, .apiladas.foco a.tarjeta-apilada { transition: none; } }
+
+/* ---------- Sin flechas dentro de los botones: el texto va centrado ---------- */
+.caja-recorrido { justify-content: center; gap: 10px; padding: 0 24px; }
+.fila-opcion[data-red] { justify-content: center; }
+.pasaporte-entrada { gap: 12px; }
+/* "Ver más hotspots": en la lista de Explorar la caja se achicaba hasta el alto del texto; ahora mide lo mismo que los otros botones */
+#explorar #ver-mas { flex: none; height: 56px; width: 100%; }

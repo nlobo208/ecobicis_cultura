@@ -26,7 +26,7 @@
   <!-- 00 · Bienvenida (cada vez que se abre la página: solo "Bienvenido" y el botón para comenzar) -->
   <section class="pantalla centrada" id="bienvenida">
     <h1>Bienvenido</h1>
-    <a class="boton fijo" id="comenzar" href="#intereses">Comenzar a pedalear <span aria-hidden="true">→</span></a>
+    <a class="boton fijo" id="comenzar" href="#intereses">Comenzar a pedalear</a>
   </section>
 
   <!-- 01 · Crear cuenta -->
@@ -43,7 +43,7 @@
           <input id="clave" type="password" placeholder="••••••••" autocomplete="new-password" minlength="8">
         </label>
         <p class="error" id="error-cuenta" role="alert" hidden></p>
-        <button class="boton" type="submit">Crear cuenta <span aria-hidden="true">→</span></button>
+        <button class="boton" type="submit">Crear cuenta</button>
       </form>
       <p class="separador"><span>o</span></p>
       <button class="boton" id="google" type="button">Registrarme con Google</button>
@@ -59,7 +59,7 @@
       <div class="chips" id="chips-intereses"></div>
       <p class="nota">Tu selección mejora “Para vos” y los recorridos sugeridos.</p>
     </div>
-    <button class="boton fijo" id="guardar-intereses" disabled>Guardar intereses <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="guardar-intereses" disabled>Guardar intereses</button>
   </section>
 
   <!-- 02b · Desde dónde salís (se pregunta en cada sesión: las recomendaciones dependen de dónde estás ahora) -->
@@ -77,7 +77,7 @@
         </label>
         <ul class="sugerencias" id="sugerencias" hidden></ul>
         <p class="nota" id="origen-aviso">Tocá el mapa o arrastrá el punto para ajustar.</p>
-        <button class="boton" id="confirmar-origen" disabled>Salgo desde acá <span aria-hidden="true">→</span></button>
+        <button class="boton" id="confirmar-origen" disabled>Salgo desde acá</button>
       </div>
     </div>
   </section>
@@ -185,7 +185,7 @@
         <input type="number" id="km-otro" inputmode="decimal" min="1" max="40" step="0.5" placeholder="Por ejemplo, 12">
       </label>
     </div>
-    <button class="boton fijo" id="buscar-recorrido">Buscar recorrido <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="buscar-recorrido">Buscar recorrido</button>
   </section>
 
   <!-- 06 · Recorrido y guía paso a paso (mapa de fondo + panel deslizable; la llegada se festeja en esta misma pantalla) -->
@@ -204,7 +204,7 @@
             <span class="paso-meta" id="paso-meta"></span>
           </div>
           </div>
-          <button class="boton compacto" id="iniciar" disabled>Ir a retirar la bici <span aria-hidden="true">→</span></button>
+          <button class="boton compacto" id="iniciar" disabled>Ir a retirar la bici</button>
         </div>
         <h1>Tu recorrido en EcoBici</h1>
         <p class="sub" id="recorrido-resumen">Armando tu propuesta…</p>
@@ -250,7 +250,7 @@
       <div id="calificar"></div>
       <p class="nota">Tus calificaciones afinan futuras recomendaciones.</p>
     </div>
-    <button class="boton fijo" id="guardar-volver">Guardar y volver <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="guardar-volver">Guardar y volver</button>
   </section>
 
   <!-- 09 · Perfil -->
@@ -266,7 +266,7 @@
       <h2>Actividad</h2>
       <div class="apiladas" id="actividad-resumen"></div>
       <h2>Tu pasaporte cultural</h2>
-      <a class="pasaporte-entrada" href="#pasaporte"><span id="perfil-sellos">0 sellos</span><span aria-hidden="true">Abrir →</span></a>
+      <a class="pasaporte-entrada" href="#pasaporte"><span id="perfil-sellos">0 sellos</span><span aria-hidden="true">Abrir</span></a>
       <h2>Tus preferidos</h2>
       <div class="carrusel" id="preferidos"></div>
       <p class="nota" id="preferidos-vacio" hidden>Todavía no marcaste ninguno. Tocá el ♡ en un hotspot para guardarlo acá.</p>
@@ -289,10 +289,10 @@
       </div>
 
       <h2>¿Dónde querés compartirlo?</h2>
-      <button class="fila-opcion" data-red="instagram">Instagram Stories <span aria-hidden="true">→</span></button>
-      <button class="fila-opcion" data-red="whatsapp">WhatsApp <span aria-hidden="true">→</span></button>
+      <button class="fila-opcion" data-red="instagram">Instagram Stories</button>
+      <button class="fila-opcion" data-red="whatsapp">WhatsApp</button>
     </div>
-    <button class="boton fijo" id="compartir-ya">Finalizar <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="compartir-ya">Finalizar</button>
   </section>
 
   <!-- 11 · Detalle lugar -->
@@ -310,7 +310,7 @@
       <div id="detalle-ficha"></div>
       <p class="credito" id="detalle-credito" hidden></p>
     </div>
-    <button class="boton fijo" id="detalle-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="detalle-sumar">Sumar al recorrido</button>
   </section>
 
   <!-- 12 · Detalle de actividad: qué vas a ver, quiénes, desde cuándo, dato curioso y enlace -->
@@ -322,10 +322,11 @@
       <span class="etiqueta-rosa" id="act-tipo"></span>
       <h1 id="act-nombre"></h1>
       <p class="sub" id="act-meta"></p>
-      <a class="donde" id="act-donde" href="#"></a>
+      <p class="donde" id="act-donde"></p>
       <div id="act-ficha"></div>
+      <a class="boton contorno" id="act-ver" href="#" hidden>Ver hotspot</a>
     </div>
-    <button class="boton fijo" id="act-sumar">Sumar al recorrido <span aria-hidden="true">→</span></button>
+    <button class="boton fijo" id="act-sumar">Sumar al recorrido</button>
   </section>
 
   <!-- 13 · Pasaporte cultural: un sello por cada lugar que visitaste, ordenados por barrio -->
@@ -342,7 +343,7 @@
   </section>
 
   <!-- Aparece arriba de la barra de inicio cuando hay lugares para visitar (o un recorrido a medio hacer) -->
-  <button class="caja-recorrido" id="caja-recorrido" type="button" hidden><span id="caja-texto">Comenzar recorrido</span><span aria-hidden="true">→</span></button>
+  <button class="caja-recorrido" id="caja-recorrido" type="button" hidden><span id="caja-texto">Comenzar recorrido</span></button>
   <nav class="nav" id="nav" aria-label="Principal">
     <a href="#inicio" data-tab="inicio" aria-label="Inicio">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg><span>Inicio</span></a>
