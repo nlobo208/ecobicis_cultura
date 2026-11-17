@@ -181,3 +181,9 @@ Los ID de la tabla son los de `hotspots_30_ejemplos_pedalito.xlsx`. En la app, l
 | 1424 | Niceto Club | 1424_niceto_club.jpg | BugWarp | [CC BY 4.0](https://commons.wikimedia.org/wiki/File:Las_Tussi_en_Niceto_Club_-_BugWarp_01.jpg) |
 | 2602 | Museo de Arte Popular Jose Hernandez | 2602_museo_de_arte_popular_jose_hernandez.jpg | Mrtngrsbch | [CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Museo_de_Arte_Popular_Jos%C3%A9_Hern%C3%A1ndez_001.jpg) |
 | 2972 | Tabaris | 2972_tabaris.jpg | Taken by the uploader, w:es:Usuario:Barcex | [CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Buenos_Aires_-_Avenida_Corrientes_-_Teatro_Tabaris.jpg) |
+
+## Foto de la pantalla de bienvenida
+
+| Archivo | Autor | Licencia |
+|---|---|---|
+| `app/img/bienvenida_caminito.jpg` | Luis Argerich | [CC BY 2.0](https://commons.wikimedia.org/wiki/File:Buenos_Aires_-_La_Boca_-_Caminito_-_200807d.jpg) · Wikimedia Commons |
