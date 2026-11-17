@@ -176,3 +176,8 @@ Los ID de la tabla son los de `hotspots_30_ejemplos_pedalito.xlsx`. En la app, l
 | 2318 | Cine Teatro Opera | 2318_cine_teatro_opera.jpg | Kaled Naya | [CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Cine_Teatro_%C3%93pera.jpg) |
 | 213 | Los Galgos | 213_los_galgos.jpg | Roberto Fiadone | [CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Bar_Los_Galgos.jpg) |
 | 1667 | Diagonal Sur | 1667_diagonal_sur.jpg | José María Pérez Núñez from Buenos Aires. | [CC BY-SA 2.0](https://commons.wikimedia.org/wiki/File:Diagonal_Sur_Buenos_Aires_2011-02-11.jpg) |
+| 1409 | Gran Rex | 1409_gran_rex.jpg | Matias Camueira | [CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Diferentes_estados_-_Teatro_Gran_Rex.jpg) |
+| 1692 | Paseo Defensa | 1692_paseo_defensa.jpg | Banfield | [CC BY-SA 2.5 ar](https://commons.wikimedia.org/wiki/File:Pasaje_de_la_Defensa_-_Interior.jpg) |
+| 1424 | Niceto Club | 1424_niceto_club.jpg | BugWarp | [CC BY 4.0](https://commons.wikimedia.org/wiki/File:Las_Tussi_en_Niceto_Club_-_BugWarp_01.jpg) |
+| 2602 | Museo de Arte Popular Jose Hernandez | 2602_museo_de_arte_popular_jose_hernandez.jpg | Mrtngrsbch | [CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Museo_de_Arte_Popular_Jos%C3%A9_Hern%C3%A1ndez_001.jpg) |
+| 2972 | Tabaris | 2972_tabaris.jpg | Taken by the uploader, w:es:Usuario:Barcex | [CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Buenos_Aires_-_Avenida_Corrientes_-_Teatro_Tabaris.jpg) |
