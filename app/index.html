@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pedalito · Cultura en EcoBici</title>
+  <meta name="description" content="Pedalito arma recorridos culturales en EcoBici por Buenos Aires: museos, teatros, ferias y más, según dónde estás.">
+  <meta name="theme-color" content="#092957">
+  <link rel="icon" href="data:,">   <!-- sin ícono propio todavía: evita el pedido de /favicon.ico que daba error 404 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
@@ -66,9 +70,9 @@
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <h1>¿Desde dónde salís?</h1>
-        <p class="sub">Así te mostramos lugares y estaciones realmente cerca tuyo, ahora.</p>
+        <p class="sub">Así te mostramos hotspots y estaciones realmente cerca tuyo, ahora.</p>
         <button class="boton contorno" id="usar-ubicacion" type="button">Usar mi ubicación actual <span aria-hidden="true">◎</span></button>
-        <label class="campo-texto">O buscá una estación o un lugar
+        <label class="campo-texto">O buscá una estación o un hotspot
           <input id="buscar-origen" type="search" placeholder="⌕ Plaza Italia, Obelisco, MALBA…" autocomplete="off">
         </label>
         <ul class="sugerencias" id="sugerencias" hidden></ul>
@@ -97,7 +101,7 @@
             <li><i style="background:#e5202e"></i>Bajo</li>
             <li><i style="background:#f76c09"></i>Medio</li>
             <li><i style="background:#ffd400"></i>Alto</li>
-            <li><i class="cuadrado"></i>Lugares</li>
+            <li><i class="cuadrado"></i>Hotspots</li>
           </ul>
         </div>
 
@@ -117,7 +121,7 @@
 
   <!-- 04 · Explorar -->
   <section class="pantalla con-hoja" id="explorar">
-    <div class="mapa-fondo" id="mapa-explorar" aria-label="Mapa con los lugares de la lista"></div>
+    <div class="mapa-fondo" id="mapa-explorar" aria-label="Mapa con los hotspots de la lista"></div>
     <div class="hoja-desliz" id="hoja-explorar" data-abierta="75" data-cerrada="50">
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
@@ -131,9 +135,9 @@
           <button class="chip" data-filtro="intereses" aria-pressed="false">Mis intereses</button>
           <button class="chip" data-filtro="verificado" aria-pressed="false">Horario verificado</button>
         </div>
-        <h2 id="cantidad">0 lugares</h2>
+        <h2 id="cantidad">0 hotspots</h2>
         <div class="apiladas foco" id="lista-lugares"></div>
-        <button class="fila-opcion agregar" id="ver-mas" type="button" hidden>Ver más lugares</button>
+        <button class="fila-opcion agregar" id="ver-mas" type="button" hidden>Ver más hotspots</button>
       </div>
     </div>
   </section>
@@ -151,13 +155,13 @@
       </label>
       <ul class="sugerencias" id="sugerencias-hasta" hidden></ul>
       <h2>Modo</h2>
-      <button class="fila-opcion activo" data-modo="sorpresa">◎ Sorprendeme con lugares cerca <span aria-hidden="true">→</span></button>
+      <button class="fila-opcion activo" data-modo="sorpresa">◎ Sorprendeme con hotspots cerca <span aria-hidden="true">→</span></button>
       <button class="fila-opcion" data-modo="destino"><span id="destino-elegido">⌖ Buscar museo, café, teatro…</span> <span aria-hidden="true">+</span></button>
       <ul class="destinos-elegidos" id="destinos-elegidos" hidden></ul>
       <button class="fila-opcion agregar" id="agregar-espacio" type="button" hidden>+ Agregar otro espacio</button>
       <div class="buscar-destino" id="buscar-destino" hidden>
         <label class="campo-texto">Buscá un museo, café, teatro…
-          <input id="destino-q" type="search" placeholder="⌕ Nombre del lugar" autocomplete="off">
+          <input id="destino-q" type="search" placeholder="⌕ Nombre del hotspot" autocomplete="off">
         </label>
         <ul class="sugerencias" id="sugerencias-destino" hidden></ul>
       </div>
@@ -216,7 +220,7 @@
 
   <!-- 08 · Cierre -->
   <section class="pantalla tres-cuartos" id="cierre">
-    <div class="franja-imagen" role="img" aria-label=""></div>
+    <div class="franja-imagen" aria-hidden="true"></div>
     <div class="contenido panel-blanco">
       <h1>Recorrido completado</h1>
       <p class="sub">Bici devuelta correctamente. Guardamos tus kilómetros.</p>
@@ -250,7 +254,7 @@
       <a class="pasaporte-entrada" href="#pasaporte"><span id="perfil-sellos">0 sellos</span><span aria-hidden="true">Abrir →</span></a>
       <h2>Tus preferidos</h2>
       <div class="carrusel" id="preferidos"></div>
-      <p class="nota" id="preferidos-vacio" hidden>Todavía no marcaste ninguno. Tocá el ♡ en un lugar para guardarlo acá.</p>
+      <p class="nota" id="preferidos-vacio" hidden>Todavía no marcaste ninguno. Tocá el ♡ en un hotspot para guardarlo acá.</p>
       <h2>Tus intereses</h2>
       <div class="chips" id="mis-intereses"></div>
       <p class="nota"><a href="#intereses">Editar intereses →</a></p>
@@ -259,7 +263,7 @@
 
   <!-- 10 · Compartir -->
   <section class="pantalla tres-cuartos" id="compartir">
-    <div class="franja-imagen" role="img" aria-label=""></div>
+    <div class="franja-imagen" aria-hidden="true"></div>
     <div class="contenido panel-blanco">
       <h1>Compartí tu salida</h1>
       <p class="sub">Sin rankings. Solo tu recorrido.</p>
@@ -280,7 +284,7 @@
   <section class="pantalla detalle" id="lugar">
     <div class="hero" id="detalle-hero">
       <button class="redondo izq" id="atras-lugar" type="button" aria-label="Volver">←</button>
-      <button class="redondo der" id="guardar-lugar" aria-label="Guardar lugar">♡</button>
+      <button class="redondo der" id="guardar-lugar" aria-label="Guardar hotspot">♡</button>
     </div>
     <div class="ficha">
       <span class="etiqueta-rosa" id="detalle-categoria"></span>
@@ -317,7 +321,7 @@
         <strong>Pasaporte cultural</strong>
         <span id="pasaporte-cuenta"></span>
       </div>
-      <p class="nota">Cada lugar que visitás en un recorrido suma su sello. Los que faltan son los hotspots de cada barrio.</p>
+      <p class="nota">Cada hotspot que visitás en un recorrido suma su sello. Los que faltan son los hotspots de cada barrio.</p>
       <div id="pasaporte-paginas"></div>
     </div>
   </section>
@@ -340,6 +344,9 @@
 <script src="env.js"></script>
 <script src="data/lugares.js"></script>
 <script src="data/fotos.js"></script>
+<script src="data/fotos_etapa1.js" onerror="void 0"></script>
+<script src="data/fotos_etapa2.js" onerror="void 0"></script>
+<script src="data/fotos_etapa3.js" onerror="void 0"></script>
 <script src="data/estaciones_modelo.js"></script>
 <script src="data/ciclovias.js"></script>
 <script src="data/actividades.js"></script>
@@ -349,6 +356,7 @@
 <script src="data/sellos.js"></script>
 <script src="data/zona_barrios.js" onerror="void 0"></script>
 <script src="js/zona.js"></script>
+<script src="js/ubicacion_viva.js"></script>
 <script src="js/horarios.js"></script>
 <script src="js/disponibilidad.js"></script>
 <script src="js/prediccion.js"></script>

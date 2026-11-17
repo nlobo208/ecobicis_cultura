@@ -129,6 +129,7 @@ $("#atras-actividad").addEventListener("click", volver);
 $("#comenzar").addEventListener("click", e => {
   e.preventDefault();
   if (!estado.email) { estado.email = "invitado"; estado.nombre = ""; guardarEstado(); }
+  UBI.iniciar();   // Chrome pide el permiso de ubicación acá, tras un toque de la persona; desde ahí se sigue en vivo
   location.hash = "intereses";
 });
 
@@ -205,6 +206,7 @@ function pintarUbicacion() {
     mapaUbi = new maplibregl.Map({ container: "mapa-ubicacion", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
       zoom: 14.5, attributionControl: false });
     ZONA.dibujar(mapaUbi);
+  UBI.dibujar(mapaUbi);
     mapaUbi.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaUbicacion.visiblePx()) } });
     mapaUbi.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaUbi.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
@@ -221,15 +223,20 @@ function pintarUbicacion() {
 
 $("#usar-ubicacion").addEventListener("click", () => {
   const aviso = $("#origen-aviso");
-  if (!navigator.geolocation) { aviso.textContent = "Tu navegador no permite ubicación. Buscá un lugar o tocá el mapa."; return; }
+  if (!navigator.geolocation) { aviso.textContent = "Tu navegador no permite ubicación. Buscá un hotspot o tocá el mapa."; return; }
+  const viva = UBI.posicion();
+  if (viva && Date.now() - viva.t < 15000) {   // la ubicación en vivo ya la tiene: se usa directo
+    const p = { lat: viva.lat, lon: viva.lon };
+    elegirPunto(p, "Tu ubicación actual"); mapaUbi?.flyTo({ center: [p.lon, p.lat], zoom: 15 }); return;
+  }
   aviso.textContent = "Buscando tu ubicación…";
   navigator.geolocation.getCurrentPosition(pos => {
     const p = { lat: pos.coords.latitude, lon: pos.coords.longitude };
     elegirPunto(p, "Tu ubicación actual");
     mapaUbi?.flyTo({ center: [p.lon, p.lat], zoom: 15 });
   }, err => {
-    aviso.textContent = err.code === 1 ? "No diste permiso de ubicación. Buscá un lugar o tocá el mapa."
-      : "No pudimos obtener tu ubicación. Buscá un lugar o tocá el mapa.";
+    aviso.textContent = err.code === 1 ? "No diste permiso de ubicación. Buscá un hotspot o tocá el mapa."
+      : "No pudimos obtener tu ubicación. Buscá un hotspot o tocá el mapa.";
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });   // maximumAge 0: nunca una posición vieja
 });
 
@@ -242,7 +249,7 @@ $("#buscar-origen").addEventListener("input", () => {
     .map(l => ({ nombre: l.nombre, detalle: `${l.categoria} · ${l.barrio}`, lat: l.lat, lon: l.lon }));
   sugerencias = [...estaciones, ...lugares].slice(0, 6);
   lista.innerHTML = sugerencias.map((s, i) => `<li><button type="button" data-i="${i}">${esc(s.nombre)}<small>${esc(s.detalle)}</small></button></li>`).join("")
-    || `<li><small style="padding:10px 14px">No encontramos ese lugar.</small></li>`;
+    || `<li><small style="padding:10px 14px">No encontramos ese hotspot.</small></li>`;
   lista.hidden = false;
 });
 $("#sugerencias").addEventListener("click", e => {
@@ -333,7 +340,7 @@ document.addEventListener("click", e => {
   const b = e.target.closest(".mas"); if (!b) return;
   const id = Number(b.dataset.id), i = estado.destinos.indexOf(id), l = porId(id);
   if (i >= 0) { estado.destinos.splice(i, 1); aviso(`${l.nombre} salió de tu recorrido.`); }
-  else if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} lugares.`); return; }
+  else if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} hotspots.`); return; }
   else { estado.destinos.push(id); plan.modo = "destino"; aviso(`${l.nombre} sumado (${estado.destinos.length}). Armá tu salida en Pedalear.`); }
   plan.tramos = null; guardarEstado(); pintarCaja();
   $$(`.mas[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "✓" : "+"; });
@@ -379,15 +386,15 @@ function pintarActividad(id) {
   const cuando = a.abre ? HOR.resumenActividad(a.dias, a.abre, a.cierra) : (a.dias || "");
   $("#act-meta").textContent = [fechas, cuando, a.precio].filter(Boolean).join(" · ");
   const donde = $("#act-donde");
-  donde.textContent = `⌖ ${a.lugar}${l ? ` · ${l.barrio} · Ver el lugar →` : ""}`;
+  donde.textContent = `⌖ ${a.lugar}${l ? ` · ${l.barrio} · Ver el hotspot →` : ""}`;
   donde.href = l ? `#lugar/${l.id}` : "#actividad/" + a.id;
   $("#act-ficha").innerHTML = bloquesFicha({ sinopsis: a.sinopsis, quienes: a.artistas, tituloQuienes: "Quiénes participan", desde: a.trayectoria,
     tituloDesde: "Desde cuándo", curioso: a.dato_curioso, url: a.url_oficial, aConfirmar: !a.ficha_verificada || a.estado !== "verificada" })
-    || `<p class="nota">Estamos sumando más información de esta actividad. Mientras tanto, mirá el lugar o consultá con ellos antes de ir.</p>`;
+    || `<p class="nota">Estamos sumando más información de esta actividad. Mientras tanto, mirá el hotspot o consultá con ellos antes de ir.</p>`;
   const sumar = $("#act-sumar");
   sumar.hidden = !l;
   if (l) {
-    sumar.firstChild.textContent = "Sumar el lugar al recorrido ";
+    sumar.firstChild.textContent = "Sumar el hotspot al recorrido ";
     sumar.onclick = () => {
       if (!estado.destinos.includes(l.id) && estado.destinos.length < MAX_DESTINOS) estado.destinos.push(l.id);
       plan.modo = "destino"; plan.tramos = null; guardarEstado(); location.hash = "planificar";
@@ -510,7 +517,7 @@ function pintarLugaresHome() {
     const el = document.createElement("button"); el.type = "button"; el.className = "lugar-pin"; el.setAttribute("aria-label", l.nombre);
     el.addEventListener("click", ev => {
       ev.stopPropagation();
-      new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br><a href="#lugar/${l.id}">Ver lugar →</a>`).addTo(mapaHome);
+      new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br><a href="#lugar/${l.id}">Ver hotspot →</a>`).addTo(mapaHome);
     });
     marcasLugares.push(new maplibregl.Marker({ element: el }).setLngLat([l.lon, l.lat]).addTo(mapaHome));
   });
@@ -527,6 +534,7 @@ function pintarMapaHome() {
   mapaHome = new maplibregl.Map({ container: "mapa-home", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
     zoom: 14.5, attributionControl: false });
   ZONA.dibujar(mapaHome);
+  UBI.dibujar(mapaHome);
   mapaHome.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaInicio.visiblePx()) } });
   mapaHome.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   mapaHome.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
@@ -575,7 +583,7 @@ async function pintarParaVos() {
   const dibujar = (lista, nota) => {
     cont.innerHTML = lista.map(l => tarjetaLugarHTML({ lugar: l, etiqueta: "CERCA TUYO", titulo: l.nombre,
       metas: [`${fmtKm(desdeOrigen(l))} · ${l.barrio}`], textoSinImagen: l.categoria })).join("")
-      || `<p class="nota">No hay lugares de tus intereses a menos de 5 km.</p>`;
+      || `<p class="nota">No hay hotspots de tus intereses a menos de 5 km.</p>`;
     origen.textContent = nota;
   };
   if (!candidatos.length) { dibujar([], ""); return; }
@@ -608,9 +616,9 @@ async function pintarTendencias() {
     const l = porId(t.id);
     return tarjetaLugarHTML({ lugar: l, etiqueta: `PUESTO ${i + 1}`, titulo: l.nombre, textoSinImagen: l.categoria,
       metas: [`${t.personas} persona${t.personas === 1 ? "" : "s"} · últimos 7 días`, `a ${fmtKm(desdeOrigen(l))}`] });
-  }).join("") || `<p class="nota">Todavía no hay visitas esta semana. Cuando alguien inicie un recorrido, sus lugares aparecen acá.</p>`;
+  }).join("") || `<p class="nota">Todavía no hay visitas esta semana. Cuando alguien inicie un recorrido, sus hotspots aparecen acá.</p>`;
   nota.textContent = !lista.length ? "" : origen === "servidor"
-    ? "Personas distintas que iniciaron un recorrido con ese lugar, de hoy a 7 días atrás. Se actualiza todos los días."
+    ? "Personas distintas que iniciaron un recorrido con ese hotspot, de hoy a 7 días atrás. Se actualiza todos los días."
     : "Sin conexión con el servidor: se muestran solo tus visitas de los últimos 7 días.";
 }
 
@@ -632,15 +640,15 @@ function pintarExplorar({ masLugares = false } = {}) {
   if (filtros.cerca) lista = lista.filter(l => desdeOrigen(l) <= 5);
   lista.sort((a, b) => desdeOrigen(a) - desdeOrigen(b));
   const mostrados = lista.slice(0, limite);
-  $("#cantidad").textContent = lista.length > mostrados.length ? `Mostrando ${mostrados.length} de ${lista.length} lugares` : `${lista.length} lugares`;
+  $("#cantidad").textContent = lista.length > mostrados.length ? `Mostrando ${mostrados.length} de ${lista.length} hotspots` : `${lista.length} hotspots`;
   $("#lista-lugares").innerHTML = mostrados.map((l, i) => `
     <a class="tarjeta-apilada ${COLORES[i % COLORES.length]}" href="#lugar/${l.id}">
       <strong>${esc(l.nombre)}</strong>
       <span>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))} · ${esc(l.barrio)}</span>
-      <span class="ver">Ver lugar →</span>
+      <span class="ver">Ver hotspot →</span>
     </a>`).join("");
   $("#ver-mas").hidden = lista.length <= mostrados.length;
-  $("#ver-mas").textContent = `Ver más lugares (${Math.min(MAX_LISTA, lista.length - mostrados.length)} más)`;
+  $("#ver-mas").textContent = `Ver más hotspots (${Math.min(MAX_LISTA, lista.length - mostrados.length)} más)`;
   $$("#filtros .chip").forEach(c => { c.classList.toggle("activo", filtros[c.dataset.filtro]); c.setAttribute("aria-pressed", filtros[c.dataset.filtro]); });
   medirFoco();
   pintarMapaExplorar(mostrados, !masLugares);   // con "Ver más" el mapa no se vuelve a encuadrar
@@ -683,6 +691,7 @@ function pintarMapaExplorar(lista, reencuadrar = true) {
     geoPendiente = geo;
     mapaExp = new maplibregl.Map({ container: "mapa-explorar", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat], zoom: 14, attributionControl: false });
     ZONA.dibujar(mapaExp);
+    UBI.dibujar(mapaExp);
     mapaExp.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaExp.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
     const punto = document.createElement("div");
@@ -695,7 +704,7 @@ function pintarMapaExplorar(lista, reencuadrar = true) {
     });
     mapaExp.on("click", "lugares", e => {
       const f = e.features[0].properties;
-      new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat).setHTML(`<strong>${esc(f.nombre)}</strong><br><a href="#lugar/${f.id}">Ver lugar →</a>`).addTo(mapaExp);
+      new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat).setHTML(`<strong>${esc(f.nombre)}</strong><br><a href="#lugar/${f.id}">Ver hotspot →</a>`).addTo(mapaExp);
     });
   } else {
     geoPendiente = geo; mapaExp.resize();
@@ -719,7 +728,7 @@ function pintarHorarios(l) {
   const cont = $("#detalle-horarios"), h = HOR.interpretar(l.horario);
   const fuente = [l.cerrado ? `Cerrado: ${esc(l.cerrado)}.` : "", l.fuente_horario ? `Fuente: ${esc(l.fuente_horario)}.` : ""].filter(Boolean).join(" ");
   const pie = `<p class="horarios-nota">${fuente} Verificá horarios antes de salir.</p>`;
-  if (!l.horario) { cont.innerHTML = `<p class="etiqueta">Horarios</p><p class="horarios-texto">Este lugar no tiene horario cargado.</p>${pie}`; return; }
+  if (!l.horario) { cont.innerHTML = `<p class="etiqueta">Horarios</p><p class="horarios-texto">Este hotspot no tiene horario cargado.</p>${pie}`; return; }
   if (!h.ok || h.dudoso) {
     cont.innerHTML = `<p class="etiqueta">Horarios</p><p class="horarios-texto">${esc(l.horario)}</p>
       <p class="horarios-nota">No pudimos ordenar este horario con certeza, así que lo mostramos tal como figura en los datos.</p>${pie}`;
@@ -779,7 +788,7 @@ function buscarPuntos(q, { estaciones = true, excluir = [] } = {}) {
 }
 function listaSugerencias(ul, items) {
   ul.innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}">${esc(s.nombre)}<small>${esc(s.detalle)}</small></button></li>`).join("")
-    || `<li><small style="padding:10px 14px">No encontramos ese lugar.</small></li>`;
+    || `<li><small style="padding:10px 14px">No encontramos ese hotspot.</small></li>`;
   ul.hidden = false;
 }
 
@@ -819,7 +828,7 @@ $("#destino-q").addEventListener("input", () => {
 $("#sugerencias-destino").addEventListener("click", e => {
   const b = e.target.closest("button[data-i]"); if (!b) return;
   const s = sugDestino[Number(b.dataset.i)];
-  if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} lugares.`); return; }
+  if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} hotspots.`); return; }
   estado.destinos.push(s.id); plan.tramos = null; guardarEstado();
   $("#destino-q").value = ""; $("#sugerencias-destino").hidden = true; agregando = false;
   pintarPlanificar();
@@ -957,7 +966,7 @@ async function armarRecorrido() {
   $("#propuesta-texto").textContent = ""; $("#paradas").innerHTML = ""; $("#leyenda").hidden = true;
   const lista = candidatos(), elegidos = obligatorios().map(l => l.id);
   const cuantos = Math.max(LUGARES_POR_TIEMPO[plan.minutos], elegidos.length);   // los elegidos no se recortan por el tiempo
-  if (!lista.length) { $("#recorrido-resumen").textContent = "No hay lugares con esos filtros. Probá con más distancia."; return; }
+  if (!lista.length) { $("#recorrido-resumen").textContent = "No hay hotspots con esos filtros. Probá con más distancia."; return; }
 
   // 1) Opciones reales para que la IA elija: estaciones vigentes para retirar y para devolver cerca de cada lugar
   const retiros = PRED.estacionesCerca(ORIGEN, "bicis", ahora, 0, RADIO_ESTACION_KM, 3);
@@ -995,11 +1004,11 @@ Respondé en JSON: {"ids":[ids en orden de visita],"retiro":número,"devolucion"
     const base = [...elegidos.map(porId), ...lista.filter(l => !elegidos.includes(l.id))].slice(0, cuantos);
     ids = ordenarPorCercania(base).map(l => l.id); retiro = retiros[0];
     ids.forEach(id => { devol[id] = devoluciones[id][0]; });
-    texto = `Te proponemos ${ids.map(id => porId(id).nombre).join(", ")}${elegidos.length ? ", los lugares que elegiste" : ", los más cercanos a tus intereses"}.`;
+    texto = `Te proponemos ${ids.map(id => porId(id).nombre).join(", ")}${elegidos.length ? ", los hotspots que elegiste" : ", los más cercanos a tus intereses"}.`;
   }
   if (sesion !== armando) return;
   ids = ids.filter(id => devol[id]);               // un lugar sin estación de devolución cerca no se puede hacer en bici
-  if (!ids.length) { $("#recorrido-resumen").textContent = "Esos lugares no tienen estación EcoBici cerca."; return; }
+  if (!ids.length) { $("#recorrido-resumen").textContent = "Esos hotspots no tienen estación EcoBici cerca."; return; }
 
   // 3) Tramos: a pie hasta la estación, en bici entre estaciones, a pie hasta el lugar
   const tramos = armarTramos(ids.map(porId), retiro, devol, ahora, plan.hasta);
@@ -1119,7 +1128,7 @@ function pintarRecorrido() {
       <span data-disp="retiro" data-i="${i}">Retiro: ${esc(t.retiro.nombre)} · ${esc(dispTexto(t.retiro, "bicis"))}</span>
       <span data-disp="devolucion" data-i="${i}">Devolución: ${esc(t.devolucion.nombre)} · ${esc(dispTexto(t.devolucion, "anclajes"))}</span></div>`;
   });
-  $("#paradas").innerHTML = resumen.join("") || `<div class="tarjeta-apilada noche"><strong>Todo a pie</strong><span>Los lugares quedan a menos de ${CAMINATA_MAX_M} m.</span></div>`;
+  $("#paradas").innerHTML = resumen.join("") || `<div class="tarjeta-apilada noche"><strong>Todo a pie</strong><span>Los hotspots quedan a menos de ${CAMINATA_MAX_M} m.</span></div>`;
 
   if (guia.tramos !== plan.tramos) prepararGuia();   // recorrido nuevo: se arma la guía (y la IA redacta las instrucciones)
   pintarPaso();
@@ -1334,7 +1343,7 @@ $("#recalcular").addEventListener("click", () => {
   if (!guia.ultimaPos) return;
   const hechos = plan.ids.slice(0, guia.pasos.slice(0, guia.i).filter(p => p.tipo === "lugar").length);   // lugares por los que ya pasaste
   const faltan = estado.destinos.filter(id => !hechos.includes(id));
-  if (plan.modo === "destino" && !faltan.length) { aviso("Ya pasaste por todos tus lugares: terminá el recorrido."); return; }
+  if (plan.modo === "destino" && !faltan.length) { aviso("Ya pasaste por todos tus hotspots: terminá el recorrido."); return; }
   estado.destinos = faltan; guardarEstado();
   fijarOrigen({ nombre: "Tu ubicación actual", ...guia.ultimaPos });
   pausarGuia(); guia.recalculando = true; plan.tramos = null;
@@ -1358,7 +1367,7 @@ $("#iniciar").addEventListener("click", () => {
 function pintarCierre() {
   const u = estado.ultimo; if (!u) { location.hash = "planificar"; return; }
   $("#cierre-km").textContent = fmtKm(u.km);
-  $("#cierre-lugares").textContent = `${u.ids.length} lugar${u.ids.length > 1 ? "es" : ""} visitado${u.ids.length > 1 ? "s" : ""}`;
+  $("#cierre-lugares").textContent = `${u.ids.length} hotspot${u.ids.length > 1 ? "s" : ""} visitado${u.ids.length > 1 ? "s" : ""}`;
   // Pirueta: cada lugar nuevo se estampa en el pasaporte (solo la primera vez que se muestra este cierre)
   const nuevos = u.ids.filter(id => !estado.visitados.includes(id)).map(porId).filter(Boolean), caja = $("#sellos-nuevos");
   $("#sellos-titulo").hidden = caja.hidden = !nuevos.length;
