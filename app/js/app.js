@@ -12,6 +12,16 @@ const ENV = Object.assign({
 const LUGARES = window.PEDALITO_LUGARES;
 // Fotos con licencia libre de los hotspots (data/fotos.js): se suman a cada lugar. Los lugares sin foto libre quedan sin imagen.
 Object.entries(window.PEDALITO_FOTOS || {}).forEach(([id, f]) => { const l = LUGARES.find(x => x.id === Number(id)); if (l) { l.img = `lugares/${f.archivo}`; l.foto = f; } });
+// Los hotspots sin foto propia muestran la imagen de su categoría (carpeta img/imagenes categorias/). La foto propia siempre
+// tiene prioridad. Anfiteatro todavía no tiene imagen propia: usa la de teatro hasta que se sume una.
+const CARPETA_CATEGORIAS = "imagenes categorias";
+const IMAGEN_CATEGORIA = {
+  "Restaurante": "restaurante", "Biblioteca": "bibliotecas", "Bar": "bar", "Monumentos y lugares históricos": "monumentos y lugares historicos",
+  "Librería": "libreria", "Café": "cafe", "Centro cultural": "centro cultural", "Sala de teatro": "sala de teatro", "Galería de arte": "galerias",
+  "Museo": "museo", "Espacio de formación": "espacio de formacion", "Disquería": "disqueria", "Club de música en vivo": "club de musica en vivo",
+  "Espacio ferial": "espacio ferial", "Sala de cine": "sala de cine", "Anfiteatro": "sala de teatro"
+};
+LUGARES.forEach(l => { if (!l.img && IMAGEN_CATEGORIA[l.categoria]) { l.img = `${CARPETA_CATEGORIAS}/${IMAGEN_CATEGORIA[l.categoria]}.jpg`; l.imgCategoria = true; } });
 // Nombres de barrio como se escriben (el dataset los trae sin tildes y "Boca" en vez de "La Boca")
 const NOMBRE_BARRIO = { "San Nicolas": "San Nicolás", "Constitucion": "Constitución", "Boca": "La Boca" };
 [...LUGARES, ...(window.PEDALITO_ESTACIONES || [])].forEach(x => { if (NOMBRE_BARRIO[x.barrio]) x.barrio = NOMBRE_BARRIO[x.barrio]; });
@@ -72,7 +82,7 @@ const porId = id => LUGARES.find(l => l.id === Number(id));
 const fmtKm = n => n.toFixed(1).replace(".", ",") + " km";
 const desdeOrigen = l => PRED.distKm(ORIGEN, l);
 const pct = p => Math.round(p * 100) + " %";
-const fotoUrl = l => l.img ? `img/${l.img}` : "";
+const fotoUrl = l => l.img ? `img/${encodeURI(l.img)}` : "";   // encodeURI: la carpeta de categorías tiene espacios en el nombre
 
 // ---------- Navegación (#inicio, #lugar/123, …) ----------
 const TABS = ["inicio", "explorar", "planificar", "perfil"];
@@ -904,7 +914,8 @@ function pintarLugar(id) {
   pintarHorarios(l);
   $("#detalle-ficha").innerHTML = fichaDeLugar(l);
   const credito = $("#detalle-credito");
-  credito.hidden = !l.foto;
+  credito.hidden = !l.foto && !l.imgCategoria;
+  if (l.imgCategoria) credito.textContent = "Imagen ilustrativa de la categoría: no es una foto de este lugar.";
   if (l.foto) credito.innerHTML = `Foto: ${esc(l.foto.autor)} · <a href="${esc(l.foto.pagina)}" target="_blank" rel="noopener">${esc(l.foto.licencia)}</a> · Wikimedia Commons`;
   const guardado = estado.guardados.includes(l.id);
   $("#guardar-lugar").textContent = guardado ? "♥" : "♡";
