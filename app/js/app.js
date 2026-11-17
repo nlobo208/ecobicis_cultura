@@ -53,7 +53,7 @@ const MAX_LISTA = 24;
 const CLAVE_ESTADO = "pedalito_final";
 const estado = Object.assign({
   email: "", nombre: "", intereses: [], km: 0, salidas: 0, visitados: [], destinos: [],
-  calificaciones: {}, guardados: [], sellos: {}, historial: [], ultimo: null
+  calificaciones: {}, guardados: [], sellos: {}, historial: [], ultimo: null, frecuentes: []
 }, leerEstado());
 const plan = { modo: "destino", minutos: 60, maxKm: 5, hasta: null, ids: [], km: 0, estaciones: null };
 
@@ -87,7 +87,7 @@ function mostrar() {
   if (!estado.email && !PUBLICAS.includes(pantalla)) pantalla = "bienvenida";
   if (estado.email && estado.intereses.length < MIN_INTERESES && pantalla !== "intereses" && !PUBLICAS.includes(pantalla)) pantalla = "intereses";
   // Con intereses ya elegidos, antes de ofrecer nada se pregunta desde dónde salís (en cada sesión)
-  if (estado.email && estado.intereses.length >= MIN_INTERESES && !origenElegido && !["intereses", "ubicacion", ...PUBLICAS].includes(pantalla)) pantalla = "ubicacion";
+  if (estado.email && estado.intereses.length >= MIN_INTERESES && !origenElegido && !["intereses", "ubicacion", "accesos", ...PUBLICAS].includes(pantalla)) pantalla = "ubicacion";
   if (pantalla === "explorar" && pantallaActual !== "explorar" && pantallaActual !== "lugar") reiniciarFiltros();
   pantallaActual = pantalla;
   if (pantalla !== "inicio") finalizado = false;
@@ -106,14 +106,14 @@ function mostrar() {
   if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apaga el GPS
 
   ({ intereses: pintarIntereses, ubicacion: pintarUbicacion, inicio: pintarInicio, explorar: pintarExplorar,
-     lugar: () => pintarLugar(param), actividad: () => pintarActividad(param), pasaporte: pintarPasaporte, planificar: pintarPlanificar, recorrido: armarRecorrido,
+     lugar: () => pintarLugar(param), actividad: () => pintarActividad(param), pasaporte: pintarPasaporte, accesos: pintarAccesos, planificar: pintarMiRuta, recorrido: armarRecorrido,
      cierre: pintarCierre, perfil: pintarPerfil, compartir: pintarCompartir }[pantalla] || (() => {}))();
 }
 
 // ---------- Flecha para volver ----------
 // Si la persona ya navegó dentro de la app se usa el historial del navegador; si entró directo, va a la pantalla anterior del flujo.
 const PADRE = { cuenta: "bienvenida", intereses: "bienvenida", ubicacion: "intereses", inicio: "ubicacion", explorar: "inicio", lugar: "explorar",
-  planificar: "inicio", recorrido: "planificar", cierre: "recorrido", perfil: "inicio", compartir: "perfil", actividad: "inicio", pasaporte: "perfil" };
+  planificar: "inicio", recorrido: "planificar", cierre: "recorrido", perfil: "inicio", compartir: "perfil", actividad: "inicio", pasaporte: "perfil", accesos: "ubicacion" };
 let navegaciones = 0, volviendo = false;
 window.addEventListener("hashchange", () => { if (volviendo) volviendo = false; else navegaciones++; mostrar(); });
 function volver() {
@@ -184,7 +184,7 @@ function estacionMasCercana(p) {
 
 /** Marca el punto de salida elegido y avisa si queda fuera de la zona cubierta (12 barrios: ver js/zona.js). */
 const ZONA = window.PedalitoZona;
-function elegirPunto(p, nombre) {
+function elegirPunto(p, nombre, redibujar = true) {
   const { e, m } = estacionMasCercana(p);
   const barrio = ZONA.barrioDe(p);
   const dentro = ZONA.hay ? !!barrio : m <= 2000;           // sin el límite cargado, se usa la regla de 2 km a una estación
@@ -194,19 +194,21 @@ function elegirPunto(p, nombre) {
     ? `${barrio ? barrio + " · " : ""}Estación EcoBici más cercana: ${e.nombre}, a ${Math.round(m)} m.`
     : `Ese punto queda fuera de los barrios que cubrimos (${ZONA.texto}). Elegí otro${ZONA.hay ? " dentro del borde punteado" : ""}.`;
   $("#confirmar-origen").disabled = !dentro;
+  if (redibujar) pintarEstacionesCercanas(p);
 }
 
 function pintarUbicacion() {
-  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true;
+  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true; $("#borrar-origen").hidden = true;
   $("#confirmar-origen").disabled = true;
   seleccion = null;
+  pintarEstacionesCercanas(ORIGEN); pintarFrecuentes();
   $("#origen-aviso").textContent = "Tocá el mapa o arrastrá el punto para ajustar.";
   if (!window.maplibregl) return;
   if (!mapaUbi) {
     mapaUbi = new maplibregl.Map({ container: "mapa-ubicacion", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat],
       zoom: 14.5, attributionControl: false });
     ZONA.dibujar(mapaUbi);
-  UBI.dibujar(mapaUbi);
+    UBI.dibujar(mapaUbi);
     mapaUbi.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaUbicacion.visiblePx()) } });
     mapaUbi.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaUbi.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
@@ -241,6 +243,7 @@ $("#usar-ubicacion").addEventListener("click", () => {
 });
 
 $("#buscar-origen").addEventListener("input", () => {
+  $("#borrar-origen").hidden = !$("#buscar-origen").value;
   const q = sinTildes($("#buscar-origen").value.trim()), lista = $("#sugerencias");
   if (q.length < 2) { lista.hidden = true; return; }
   const estaciones = ESTACIONES.filter(e => sinTildes(e.nombre).includes(q))
@@ -273,6 +276,114 @@ $("#referencias-boton").addEventListener("click", () => {
   boton.setAttribute("aria-expanded", String(!ocultar));
   boton.setAttribute("aria-label", ocultar ? "Mostrar las referencias del mapa" : "Ocultar las referencias del mapa");
 });
+
+// ---------- Estaciones cercanas al punto de partida (con la disponibilidad de ahora, o estimada) ----------
+const ICONOS = {
+  casa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>',
+  trabajo: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg>',
+  otro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.6 0-1.4-1-1.3-1-2.4 0-.9.7-1.5 1.7-1.5H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/></svg>',
+  bici: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9.5 8h5l4 8.5M9.5 8l3 8.5M14.5 8l1-2.5H18"/></svg>',
+  lapiz: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
+  tacho: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'
+};
+const iconoDe = nombre => /casa|hogar|depto|departamento/i.test(nombre) ? "casa" : /trabajo|oficina|laburo/i.test(nombre) ? "trabajo" : "otro";
+
+function pintarEstacionesCercanas(p) {
+  const cerca = ESTACIONES.map(e => ({ e, m: PRED.distKm(p, e) * 1000 })).sort((a, b) => a.m - b.m).slice(0, 3);
+  $("#estaciones-tag").textContent = DISP.estado.enVivo ? "Tiempo real" : "Estimado";
+  $("#estaciones-cercanas").innerHTML = cerca.map(({ e, m }) => {
+    const v = DISP.de(e.numero);
+    const detalle = v
+      ? `<span class="${v.bicis ? "ok" : "sin"}">● ${plural(v.bicis, "bici libre", "bicis libres")}</span> · ${plural(v.anclajes, "anclaje", "anclajes")}`
+      : `<span>Bicis: ${esc(PRED.predecirEstacion(e.numero, new Date(), 0).nivelBicis)} (estimado)</span>`;
+    return `<li><label class="estacion-op"><span class="icono-circulo">${ICONOS.bici}</span>
+      <span class="cuerpo"><strong>${esc(e.nombre)}</strong><small>${detalle} · a ${Math.round(m)} m</small></span>
+      <input type="radio" name="est-origen" value="${e.numero}"><i class="radio" aria-hidden="true"></i></label></li>`;
+  }).join("");
+}
+$("#estaciones-cercanas").addEventListener("change", e => {
+  const est = ESTACIONES.find(x => String(x.numero) === e.target.value); if (!est) return;
+  elegirPunto({ lat: est.lat, lon: est.lon }, `Estación ${est.nombre}`, false);      // sin redibujar la lista: queda marcada la que tocaste
+  mapaUbi?.flyTo({ center: [est.lon, est.lat], zoom: 15.5 });
+});
+$("#borrar-origen").addEventListener("click", () => {
+  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true; $("#borrar-origen").hidden = true; $("#buscar-origen").focus();
+});
+
+// ---------- Lugares frecuentes (Casa, Trabajo…): se guardan en este navegador y se eligen con un toque ----------
+const MAX_FRECUENTES = 6;
+function pintarFrecuentes() {
+  const caja = $("#frecuentes");
+  if (!estado.frecuentes.length) { caja.innerHTML = `<p class="nota">Todavía no guardaste lugares. Tocá «Editar» para sumar tu casa o tu trabajo.</p>`; return; }
+  caja.innerHTML = estado.frecuentes.map((f, i) => `<button type="button" class="frecuente" data-i="${i}">
+    <span class="icono-circulo ${iconoDe(f.nombre)}">${ICONOS[iconoDe(f.nombre)]}</span><small class="dist">${fmtKm(PRED.distKm(ORIGEN, f))}</small>
+    <strong>${esc(f.nombre)}</strong><small>${esc(f.detalle || "")}</small></button>`).join("");
+}
+$("#frecuentes").addEventListener("click", e => {
+  const b = e.target.closest(".frecuente"); if (!b) return;
+  const f = estado.frecuentes[Number(b.dataset.i)];
+  elegirPunto({ lat: f.lat, lon: f.lon }, f.nombre);
+  mapaUbi?.flyTo({ center: [f.lon, f.lat], zoom: 15.5 });
+});
+
+// ---------- 02c · Gestioná tus accesos rápidos ----------
+let accesos = [], accEditando = null, accLugar = null, accSug = [];
+function pintarAccesos() {
+  accesos = estado.frecuentes.map(f => ({ ...f })); accEditando = null; cerrarFormAcceso();
+  pintarListaAccesos();
+}
+function pintarListaAccesos() {
+  $("#lista-accesos").innerHTML = accesos.length ? accesos.map((f, i) => `<li class="acceso">
+    <span class="icono-circulo ${iconoDe(f.nombre)}">${ICONOS[iconoDe(f.nombre)]}</span>
+    <div class="cuerpo"><strong>${esc(f.nombre)}</strong><small>${esc(f.detalle || "")}</small></div>
+    <button type="button" class="redondito" data-editar="${i}" aria-label="Editar ${esc(f.nombre)}">${ICONOS.lapiz}</button>
+    <button type="button" class="redondito" data-borrar="${i}" aria-label="Borrar ${esc(f.nombre)}">${ICONOS.tacho}</button></li>`).join("")
+    : `<li class="nota">Todavía no hay lugares guardados.</li>`;
+  $("#agregar-acceso").hidden = accesos.length >= MAX_FRECUENTES || !$("#form-acceso").hidden;
+}
+function cerrarFormAcceso() { $("#form-acceso").hidden = true; $("#acc-error").hidden = true; accEditando = null; accLugar = null; }
+function abrirFormAcceso(i) {
+  accEditando = i; accLugar = i != null ? { lat: accesos[i].lat, lon: accesos[i].lon, detalle: accesos[i].detalle } : null;
+  $("#acc-nombre").value = i != null ? accesos[i].nombre : ""; $("#acc-buscar").value = ""; $("#acc-sug").hidden = true; $("#acc-error").hidden = true;
+  $("#acc-detalle").textContent = accLugar ? (accLugar.detalle || "Lugar elegido") : "Sin lugar elegido todavía";
+  $("#form-acceso").hidden = false; $("#agregar-acceso").hidden = true; $("#acc-nombre").focus();
+}
+$("#agregar-acceso").addEventListener("click", () => abrirFormAcceso(null));
+$("#lista-accesos").addEventListener("click", e => {
+  const ed = e.target.closest("[data-editar]"), bo = e.target.closest("[data-borrar]");
+  if (ed) abrirFormAcceso(Number(ed.dataset.editar));
+  if (bo) { accesos.splice(Number(bo.dataset.borrar), 1); cerrarFormAcceso(); pintarListaAccesos(); }
+});
+$("#acc-buscar").addEventListener("input", () => {
+  accSug = buscarPuntos($("#acc-buscar").value, { estaciones: true });
+  if ($("#acc-buscar").value.trim().length < 2) $("#acc-sug").hidden = true; else listaSugerencias($("#acc-sug"), accSug);
+});
+$("#acc-sug").addEventListener("click", e => {
+  const b = e.target.closest("button[data-i]"); if (!b) return;
+  const s = accSug[Number(b.dataset.i)];
+  accLugar = { lat: s.lat, lon: s.lon, detalle: s.nombre }; $("#acc-sug").hidden = true; $("#acc-buscar").value = s.nombre;
+  $("#acc-detalle").textContent = s.nombre;
+  if (!$("#acc-nombre").value.trim()) $("#acc-nombre").value = s.nombre.slice(0, 24);
+});
+$("#acc-ubicacion").addEventListener("click", () => {
+  const usar = p => { accLugar = { lat: p.lat, lon: p.lon, detalle: "Tu ubicación actual" }; $("#acc-detalle").textContent = "Tu ubicación actual"; };
+  const viva = UBI.posicion();
+  if (viva) { usar(viva); return; }
+  if (!navigator.geolocation) { $("#acc-detalle").textContent = "Tu navegador no permite ubicación"; return; }
+  $("#acc-detalle").textContent = "Buscando tu ubicación…";
+  navigator.geolocation.getCurrentPosition(pos => usar({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+    () => { $("#acc-detalle").textContent = "No pudimos obtener tu ubicación"; }, { enableHighAccuracy: true, timeout: 12000 });
+});
+$("#acc-listo").addEventListener("click", () => {
+  const nombre = $("#acc-nombre").value.trim(), err = $("#acc-error");
+  if (!nombre) { err.textContent = "Ponele un nombre al lugar."; err.hidden = false; return; }
+  if (!accLugar) { err.textContent = "Elegí dónde queda: buscalo o usá tu ubicación."; err.hidden = false; return; }
+  const item = { id: accEditando != null ? accesos[accEditando].id : Date.now(), nombre, detalle: accLugar.detalle || "", lat: accLugar.lat, lon: accLugar.lon };
+  if (accEditando != null) accesos[accEditando] = item; else accesos.push(item);
+  cerrarFormAcceso(); pintarListaAccesos();
+});
+$("#acc-cancelar-form").addEventListener("click", () => { cerrarFormAcceso(); pintarListaAccesos(); });
+$("#acc-guardar").addEventListener("click", () => { estado.frecuentes = accesos.map(f => ({ ...f })); guardarEstado(); location.hash = "ubicacion"; });
 
 // ---------- 03 · Home ----------
 let mapaHome;
@@ -345,14 +456,18 @@ function aviso(texto) {
 const MAX_DESTINOS = 5;
 const botonMas = id => { const sumado = estado.destinos.includes(id);
   return `<button class="mas" type="button" data-id="${id}" aria-pressed="${sumado}" aria-label="${sumado ? "Quitar del recorrido" : "Sumar al recorrido"}">${sumado ? "✓" : "+"}</button>`; };
+/** Botón de texto para sumar el hotspot al recorrido (tarjetas de Explorar). Hace lo mismo que el "+": suma o quita. */
+const botonAgregar = id => { const sumado = estado.destinos.includes(id);
+  return `<button class="agregar-rec" type="button" data-id="${id}" aria-pressed="${sumado}">${sumado ? "En tu recorrido ✓" : "Agregar al recorrido"}</button>`; };
 document.addEventListener("click", e => {
-  const b = e.target.closest(".mas"); if (!b) return;
+  const b = e.target.closest(".mas, .agregar-rec"); if (!b) return;
   const id = Number(b.dataset.id), i = estado.destinos.indexOf(id), l = porId(id);
   if (i >= 0) { estado.destinos.splice(i, 1); aviso(`${l.nombre} salió de tu recorrido.`); }
   else if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} hotspots.`); return; }
-  else { estado.destinos.push(id); plan.modo = "destino"; aviso(`${l.nombre} sumado (${estado.destinos.length}). Armá tu salida en Pedalear.`); }
+  else { estado.destinos.push(id); plan.modo = "destino"; aviso(`${l.nombre} sumado (${estado.destinos.length}). Mirá tu ruta en Pedalear.`); }
   plan.tramos = null; guardarEstado(); pintarCaja();
   $$(`.mas[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "✓" : "+"; });
+  $$(`.agregar-rec[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "En tu recorrido ✓" : "Agregar al recorrido"; });
 });
 
 /** Tarjeta de los carruseles del Home. `lugar` puede faltar (actividad sin lugar en el dataset): entonces no hay link ni "+". */
@@ -393,7 +508,17 @@ function pintarActividad(id) {
   const dm = f => `${f.slice(8, 10)}/${f.slice(5, 7)}`;
   const fechas = a.desde && a.hasta ? `Del ${dm(a.desde)} al ${dm(a.hasta)}` : a.hasta ? `Hasta el ${dm(a.hasta)}` : a.desde ? `Desde el ${dm(a.desde)}` : "";
   const cuando = a.abre ? HOR.resumenActividad(a.dias, a.abre, a.cierra) : (a.dias || "");
-  $("#act-meta").textContent = [fechas, cuando, a.precio].filter(Boolean).join(" · ");
+  // Cuándo y cuánto, separado para entenderlo de un vistazo: fechas y entradas en etiquetas, y los días en la grilla de la semana
+  const semana = HOR.semanaActividad(a.dias, a.abre, a.cierra);
+  const mayus = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const etiquetas = [fechas ? `<span class="pill-dato fecha">${esc(fechas)}</span>` : "",
+    ...String(a.precio || "").split(/\s*;\s*/).filter(Boolean).map(p => `<span class="pill-dato precio">${esc(mayus(p))}</span>`)].filter(Boolean);
+  const estadoHoy = semana ? HOR.estadoAhora(semana) : null;
+  $("#act-meta").innerHTML = (etiquetas.length ? `<div class="pills-datos">${etiquetas.join("")}</div>` : "") + (semana
+    ? `<div class="horarios"><div class="horarios-cab"><p class="etiqueta">Días y horarios</p>
+        ${estadoHoy ? `<span class="estado ${estadoHoy.abierto ? "abierto" : "cerrado"}">${esc(estadoHoy.texto)}</span>` : ""}</div>
+        <ul class="semana">${semanaHTML(semana)}</ul>${semana.notas.length ? `<p class="horarios-notas">${semana.notas.map(esc).join(" · ")}</p>` : ""}</div>`
+    : cuando ? `<p class="sub">${esc(cuando)}</p>` : "");
   const donde = $("#act-donde");
   donde.textContent = `⌖ ${a.lugar}${l ? ` · ${l.barrio}` : ""}`;
   const ver = $("#act-ver");
@@ -653,11 +778,16 @@ function pintarExplorar({ masLugares = false } = {}) {
   const mostrados = lista.slice(0, limite);
   $("#cantidad").textContent = lista.length > mostrados.length ? `Mostrando ${mostrados.length} de ${lista.length} hotspots` : `${lista.length} hotspots`;
   $("#lista-lugares").innerHTML = mostrados.map((l, i) => `
-    <a class="tarjeta-apilada ${COLORES[i % COLORES.length]}" href="#lugar/${l.id}">
-      <strong>${esc(l.nombre)}</strong>
-      <span>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))} · ${esc(l.barrio)}</span>
-      <span class="ver">Ver hotspot</span>
-    </a>`).join("");
+    <div class="tarjeta-apilada con-acciones ${COLORES[i % COLORES.length]}">
+      <a class="enlace-card" href="#lugar/${l.id}">
+        <strong>${esc(l.nombre)}</strong>
+        <span>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))} · ${esc(l.barrio)}</span>
+      </a>
+      <div class="acciones-card">
+        <a class="ver" href="#lugar/${l.id}">Ver hotspot</a>
+        ${botonAgregar(l.id)}
+      </div>
+    </div>`).join("");
   $("#ver-mas").hidden = lista.length <= mostrados.length;
   $("#ver-mas").textContent = `Ver más hotspots (${Math.min(MAX_LISTA, lista.length - mostrados.length)} más)`;
   $$("#filtros .chip").forEach(c => { c.classList.toggle("activo", filtros[c.dataset.filtro]); c.setAttribute("aria-pressed", filtros[c.dataset.filtro]); });
@@ -735,6 +865,15 @@ const hojaExplorar = hacerDeslizable($("#hoja-explorar"), () => {
 // ---------- 11 · Detalle lugar ----------
 // Horarios: se reinterpreta el texto del dataset (js/horarios.js) y se muestra como una semana de un vistazo.
 // Si no se puede entender con certeza, se muestra el texto original, sin inventar nada.
+/** Los 7 días de una semana ya interpretada (HOR.interpretar o HOR.semanaActividad), con el día de hoy marcado. */
+function semanaHTML(h) {
+  const hoy = (new Date().getDay() + 6) % 7;
+  return h.semana.map((d, i) => {
+    const horas = d.cerrado ? `<span class="cerrado">Cerrado</span>`
+      : d.texto ? `<span>${esc(d.texto)}</span>` : d.tramos.map(t => `<span>${esc(HOR.tramoCorto(t))}</span>`).join("");
+    return `<li class="dia ${d.cerrado ? "cerrado" : "abierto"} ${i === hoy ? "hoy" : ""}" ${i === hoy ? 'aria-current="date"' : ""}><b>${HOR.INICIAL[i]}</b>${horas}</li>`;
+  }).join("");
+}
 function pintarHorarios(l) {
   const cont = $("#detalle-horarios"), h = HOR.interpretar(l.horario);
   const fuente = [l.cerrado ? `Cerrado: ${esc(l.cerrado)}.` : "", l.fuente_horario ? `Fuente: ${esc(l.fuente_horario)}.` : ""].filter(Boolean).join(" ");
@@ -745,12 +884,7 @@ function pintarHorarios(l) {
       <p class="horarios-nota">No pudimos ordenar este horario con certeza, así que lo mostramos tal como figura en los datos.</p>${pie}`;
     return;
   }
-  const hoy = (new Date().getDay() + 6) % 7, estadoHoy = HOR.estadoAhora(h);
-  const dias = h.semana.map((d, i) => {
-    const horas = d.cerrado ? `<span class="cerrado">Cerrado</span>`
-      : d.texto ? `<span>${esc(d.texto)}</span>` : d.tramos.map(t => `<span>${esc(HOR.tramoCorto(t))}</span>`).join("");
-    return `<li class="dia ${d.cerrado ? "cerrado" : "abierto"} ${i === hoy ? "hoy" : ""}" ${i === hoy ? 'aria-current="date"' : ""}><b>${HOR.INICIAL[i]}</b>${horas}</li>`;
-  }).join("");
+  const estadoHoy = HOR.estadoAhora(h), dias = semanaHTML(h);
   cont.innerHTML = `
     <div class="horarios-cab"><p class="etiqueta">Horarios</p>
       ${estadoHoy ? `<span class="estado ${estadoHoy.abierto ? "abierto" : "cerrado"}">${esc(estadoHoy.texto)}</span>` : ""}</div>
@@ -785,9 +919,7 @@ function pintarLugar(id) {
   };
 }
 
-// ---------- 05 · Planificar ----------
-// "Desde" lo elegiste al entrar. "Hasta" es opcional: si lo completás, el recorrido termina ahí.
-// En modo "con destino" podés sumar uno o más espacios para visitar (hasta 5).
+// ---------- Búsqueda de puntos (la usan Accesos rápidos y el buscador de origen) ----------
 function buscarPuntos(q, { estaciones = true, excluir = [] } = {}) {
   const t = sinTildes(q.trim()); if (t.length < 2) return [];
   const est = estaciones ? ESTACIONES.filter(e => sinTildes(e.nombre).includes(t))
@@ -803,80 +935,138 @@ function listaSugerencias(ul, items) {
   ul.hidden = false;
 }
 
-let sugHasta = [], sugDestino = [], agregando = false;
-function pintarPlanificar() {
-  $("#origen").value = `⌖ ${ORIGEN.nombre}`;
-  $("#hasta").value = plan.hasta ? plan.hasta.nombre : "";
-  $$("[data-modo]").forEach(m => m.classList.toggle("activo", m.dataset.modo === plan.modo));
-  const n = estado.destinos.length, conDestino = plan.modo === "destino";
-  $("#destino-elegido").textContent = n ? `⌖ ${n} espacio${n > 1 ? "s" : ""} para visitar` : "⌖ Buscar museo, café, teatro…";
-  const ul = $("#destinos-elegidos");
-  ul.hidden = !conDestino || !n;
-  ul.innerHTML = estado.destinos.map(porId).filter(Boolean).map((l, i) =>
-    `<li><span><strong>${i + 1} · ${esc(l.nombre)}</strong><small>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))}</small></span>
-     <button type="button" data-quitar="${l.id}" aria-label="Quitar ${esc(l.nombre)}">✕</button></li>`).join("");
-  const buscando = conDestino && (agregando || n === 0);
-  $("#buscar-destino").hidden = !buscando;
-  $("#agregar-espacio").hidden = !conDestino || !n || buscando || n >= MAX_DESTINOS;
+// ---------- 05 · Mi ruta en bici (la pestaña Pedalear) ----------
+// Los hotspots que sumás con «Agregar al recorrido» (Explorar, Inicio, fichas) se ven acá como una ruta: tiempo, distancia,
+// mapa, itinerario e impacto. La ruta la arma el mismo motor de siempre (armarRecorrido: IA para elegir estaciones y trazados,
+// ruteo por calles). «Iniciar pedaleo con GPS» arranca la guía paso a paso (pantalla "recorrido").
+let mapaMiRuta = null, calculando = 0, editandoParadas = false;
+const KG_CO2_POR_KM_AUTO = 0.12;     // estimación: un auto promedio emite unos 120 g de CO₂ por km; la bici, ninguno
+
+function pintarMiRuta() {
+  const hay = estado.destinos.length > 0;
+  $("#miruta-vacia").hidden = hay; $("#miruta-contenido").hidden = !hay;
+  $("#miruta-sub").textContent = `Pedaleo cultural personalizado por ${ZONA.barrioDe(ORIGEN) || ORIGEN.nombre}`;
+  if (!hay) { editandoParadas = false; return; }
+  plan.modo = "destino";
+  if (plan.tramos) dibujarMiRuta(); else calcularMiRuta();
 }
-$$("[data-modo]").forEach(m => m.addEventListener("click", () => {
-  plan.modo = m.dataset.modo; plan.tramos = null;
-  agregando = m.dataset.modo === "destino" && estado.destinos.length === 0;
-  pintarPlanificar();
-  if (agregando) $("#destino-q").focus();
-}));
-$("#agregar-espacio").addEventListener("click", () => { agregando = true; pintarPlanificar(); $("#destino-q").focus(); });
-$("#destinos-elegidos").addEventListener("click", e => {
-  const b = e.target.closest("[data-quitar]"); if (!b) return;
-  estado.destinos = estado.destinos.filter(id => id !== Number(b.dataset.quitar));
-  plan.tramos = null; guardarEstado(); pintarCaja(); pintarPlanificar();
-});
-$("#destino-q").addEventListener("input", () => {
-  const items = buscarPuntos($("#destino-q").value, { estaciones: false, excluir: estado.destinos });
-  sugDestino = items;
-  if ($("#destino-q").value.trim().length < 2) $("#sugerencias-destino").hidden = true; else listaSugerencias($("#sugerencias-destino"), items);
-});
-$("#sugerencias-destino").addEventListener("click", e => {
-  const b = e.target.closest("button[data-i]"); if (!b) return;
-  const s = sugDestino[Number(b.dataset.i)];
-  if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} hotspots.`); return; }
-  estado.destinos.push(s.id); plan.tramos = null; guardarEstado();
-  $("#destino-q").value = ""; $("#sugerencias-destino").hidden = true; agregando = false;
-  pintarPlanificar();
-});
-$("#hasta").addEventListener("input", () => {
-  const q = $("#hasta").value;
-  if (!q.trim()) { plan.hasta = null; plan.tramos = null; $("#sugerencias-hasta").hidden = true; return; }
-  sugHasta = buscarPuntos(q);
-  if (q.trim().length < 2) $("#sugerencias-hasta").hidden = true; else listaSugerencias($("#sugerencias-hasta"), sugHasta);
-});
-$("#sugerencias-hasta").addEventListener("click", e => {
-  const b = e.target.closest("button[data-i]"); if (!b) return;
-  const s = sugHasta[Number(b.dataset.i)];
-  plan.hasta = { nombre: s.nombre, lat: s.lat, lon: s.lon }; plan.tramos = null;
-  $("#hasta").value = s.nombre; $("#sugerencias-hasta").hidden = true;
-});
-// Tiempo y distancia: tres opciones fijas y "Otro", que abre un campo para escribir el valor propio
-function elegirOpcion({ lista, otro, campo, entrada, clave, minimo, maximo, aplicar }) {
-  $(lista).addEventListener("click", e => {
-    const b = e.target.closest(".chip"); if (!b) return;
-    const esOtro = b.dataset.otro === otro;
-    $$(`${lista} .chip`).forEach(c => { c.classList.toggle("activo", c === b); if (c.dataset.otro) c.setAttribute("aria-expanded", String(esOtro && c === b)); });
-    $(campo).hidden = !esOtro;
-    if (esOtro) { $(entrada).focus(); usarValor(); } else if (b.dataset[clave]) aplicar(Number(b.dataset[clave]));
+
+async function calcularMiRuta() {
+  const mia = ++calculando;
+  $("#miruta-estado").textContent = "Armando tu ruta…"; $("#miruta-estado").hidden = false;
+  $("#miruta-resultado").hidden = true; $("#miruta-iniciar").disabled = true;
+  await armarRecorrido({ vista: "miruta" });
+  if (mia !== calculando || pantallaActual !== "planificar") return;
+  if (plan.tramos) dibujarMiRuta();
+  else $("#miruta-estado").textContent = $("#recorrido-resumen").textContent || "No pudimos armar la ruta. Probá de nuevo.";
+}
+
+/** Números de la ruta armada (en bici y a pie) a partir de los tramos que dejó el motor. */
+function datosRuta() {
+  const tramos = plan.tramos.filter(t => t.modo !== "llegada");
+  const validos = tramos.filter(t => t.rutas?.length), elegida = t => t.rutas[t.elegida];
+  const sumar = (modo, campo) => validos.filter(t => t.modo === modo).reduce((s, t) => s + elegida(t)[campo], 0);
+  const mBici = sumar("bici", "metros"), mPie = sumar("pie", "metros");
+  const seg = validos.reduce((s, t) => s + elegida(t).segundos, 0);
+  const metrosCiclo = validos.filter(t => t.modo === "bici").reduce((s, t) => s + elegida(t).metros * elegida(t).pctCiclovia / 100, 0);
+  return { validos, elegida, mBici, mPie, minutos: minutosDe(seg), pctCiclo: mBici ? Math.round(100 * metrosCiclo / mBici) : null };
+}
+/** Minutos que lleva llegar a cada parada desde la anterior (a pie + en bici). */
+function minutosPorParada(elegida) {
+  const res = []; let seg = 0;
+  plan.tramos.forEach(t => {
+    if (t.rutas?.length) seg += elegida(t).segundos;
+    if (t.tipo === "lugar" || t.tipo === "final") { res.push(minutosDe(seg)); seg = 0; }
   });
-  function usarValor() {
-    const v = parseFloat($(entrada).value.replace(",", "."));
-    if (Number.isFinite(v)) aplicar(Math.min(maximo, Math.max(minimo, v)));   // fuera de rango: se acerca al límite; vacío: queda el valor anterior
-  }
-  $(entrada).addEventListener("input", usarValor);
-  $(entrada).addEventListener("blur", () => { const v = parseFloat($(entrada).value.replace(",", ".")); if (Number.isFinite(v)) $(entrada).value = Math.min(maximo, Math.max(minimo, v)); });
+  return res;
 }
-elegirOpcion({ lista: "#tiempos", otro: "min", campo: "#otro-min", entrada: "#min-otro", clave: "min", minimo: 10, maximo: 480, aplicar: v => { plan.minutos = v; } });
-elegirOpcion({ lista: "#distancias", otro: "km", campo: "#otro-km", entrada: "#km-otro", clave: "km", minimo: 1, maximo: 40, aplicar: v => { plan.maxKm = v; } });
-$("#buscar-recorrido").addEventListener("click", () => {
-  if (plan.modo === "destino" && !estado.destinos.length) { aviso("Sumá al menos un hotspot para armar tu recorrido."); return; }
-  plan.tramos = null; location.hash = "recorrido";                // un recorrido nuevo cada vez
+const dispChips = est => {
+  const v = DISP.de(est.numero);
+  return v ? `<span class="chip-disp ${v.bicis ? "ok" : "sin"}">${plural(v.bicis, "bici lista", "bicis listas")}</span><span class="chip-disp">${plural(v.anclajes, "anclaje libre", "anclajes libres")}</span>`
+           : `<span class="chip-disp">Bicis: ${esc(PRED.predecirEstacion(est.numero, new Date(), 0).nivelBicis)} (estimado)</span>`;
+};
+
+function dibujarMiRuta() {
+  const d = datosRuta();
+  $("#miruta-estado").hidden = true; $("#miruta-resultado").hidden = false; $("#miruta-iniciar").disabled = false;
+  $("#stat-minutos").textContent = d.minutos;
+  $("#stat-km").textContent = fmtKm((d.mBici + d.mPie) / 1000).replace(" km", "").replace(".", ",");
+  $("#stat-ciclo").textContent = d.pctCiclo == null ? "–" : `${d.pctCiclo}%`;
+  $("#impacto-co2").textContent = `${(d.mBici / 1000 * KG_CO2_POR_KM_AUTO).toFixed(1).replace(".", ",")} kg`;
+  $("#impacto-ciclo").textContent = d.pctCiclo == null ? "–" : `${d.pctCiclo}%`;
+  $("#chip-ciclo").hidden = d.pctCiclo == null; $("#chip-ciclo").textContent = `${d.pctCiclo}% por ciclovía`;
+  $("#chip-bicis").textContent = DISP.estado.enVivo ? "EcoBici en vivo" : "EcoBici estimada";
+
+  // Itinerario: punto de partida (con la estación donde retirás la bici) y cada parada
+  const retiro = plan.tramos.find(t => t.modo === "bici")?.retiro;
+  const minutos = minutosPorParada(d.elegida);
+  const inicio = `<li class="parada inicio"><span class="num"><i></i></span><div class="cuerpo">
+      <span class="etiqueta">Punto de partida</span><strong>${esc(ORIGEN.nombre)}</strong>
+      ${retiro ? `<small>Estación EcoBici #${esc(retiro.numero)} · ${esc(retiro.nombre)}</small><div class="chips-disp">${dispChips(retiro)}</div>` : `<small>Vas a pie hasta tu primera parada</small>`}</div></li>`;
+  const paradas = plan.ids.map(porId).map((l, i) => {
+    const h = l.horario ? HOR.interpretar(l.horario) : null, e = h && h.ok && !h.dudoso ? HOR.estadoAhora(h) : null;
+    return `<li class="parada"><span class="num">${i + 1}</span><div class="cuerpo">
+      <span class="etiqueta">Parada ${i + 1}${minutos[i] != null ? ` · ${minutos[i]} min` : ""}</span><strong>${esc(l.nombre)}</strong><small>${esc(l.direccion || l.barrio)}</small></div>
+      ${e ? `<span class="estado-pill ${e.abierto ? "abierto" : "cerrado"}">${e.abierto ? "Abierto" : "Cerrado"}</span>` : `<span class="estado-pill">${esc(l.categoria)}</span>`}
+      <button type="button" class="quitar" data-quitar="${l.id}" aria-label="Quitar ${esc(l.nombre)} de la ruta">✕</button></li>`;
+  });
+  $("#itinerario").innerHTML = inicio + paradas.join("");
+  pintarEdicionParadas();
+  pintarMapaMiRuta(d);
+}
+
+function pintarEdicionParadas() {
+  $("#itinerario").classList.toggle("editando", editandoParadas);
+  $("#miruta-modificar").textContent = editandoParadas ? "Listo" : "Modificar paradas";
+  $("#miruta-sumar-mas").hidden = !editandoParadas || estado.destinos.length >= MAX_DESTINOS;
+}
+
+function pintarMapaMiRuta(d) {
+  if (!window.maplibregl) return;
+  if (mapaMiRuta) { mapaMiRuta.remove(); mapaMiRuta = null; }
+  const puntos = [ORIGEN, ...plan.ids.map(porId), ...d.validos.flatMap(t => d.elegida(t).coords.map(c => ({ lon: c[0], lat: c[1] })))];
+  const lons = puntos.map(p => p.lon), lats = puntos.map(p => p.lat);
+  const limites = [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
+  mapaMiRuta = new maplibregl.Map({ container: "mapa-miruta", style: ENV.OPENFREEMAP_STYLE_URL, attributionControl: false, interactive: false,
+    bounds: limites, fitBoundsOptions: { padding: 38, maxZoom: 16 } });
+  const m = mapaMiRuta;
+  requestAnimationFrame(() => { m.resize(); m.fitBounds(limites, { padding: 38, maxZoom: 16, duration: 0 }); });   // ya con el tamaño final del contenedor
+  m.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+  const linea = modo => ({ type: "FeatureCollection", features: d.validos.filter(t => t.modo === modo).map(t =>
+    ({ type: "Feature", geometry: { type: "LineString", coordinates: d.elegida(t).coords }, properties: {} })) });
+  m.once("style.load", () => {
+    m.addSource("pie", { type: "geojson", data: linea("pie") });
+    m.addLayer({ id: "pie", type: "line", source: "pie", paint: { "line-color": "#0b192c", "line-width": 4, "line-dasharray": [1.2, 1.6] } });
+    m.addSource("bici", { type: "geojson", data: linea("bici") });
+    m.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#b5005e", "line-width": 5 } });
+  });
+  const origen = document.createElement("div"); origen.className = "pin"; origen.style.cssText += ";width:18px;height:18px;background:#1a35e6";
+  new maplibregl.Marker({ element: origen }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(m);
+  d.validos.filter(t => t.modo === "bici").forEach(t => [[t.retiro, t.desde, "bicis"], [t.devolucion, t.hasta, "anclajes"]].forEach(([est, p, clave]) => {   // estaciones: cuadrados
+    const el = document.createElement("div");
+    if (!pintarPin(el, est.numero, clave, "E")) pintarEstimado(el, est, clave);
+    el.classList.remove("estimado");
+    new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(m);
+  }));
+  plan.ids.map(porId).forEach((l, i) => {                                           // hotspots: círculos numerados
+    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#e30077";
+    new maplibregl.Marker({ element: pin }).setLngLat([l.lon, l.lat]).addTo(m);
+  });
+}
+
+$("#miruta-iniciar").addEventListener("click", () => {
+  if (!plan.tramos) return;
+  plan.autoIniciar = true; location.hash = "recorrido";               // en la guía arranca solo, sin otro toque
+});
+$("#miruta-modificar").addEventListener("click", () => { editandoParadas = !editandoParadas; pintarEdicionParadas(); });
+$("#miruta-sumar-mas").addEventListener("click", () => { location.hash = "explorar"; });
+$("#itinerario").addEventListener("click", e => {
+  const b = e.target.closest("[data-quitar]"); if (!b) return;
+  const id = Number(b.dataset.quitar), l = porId(id);
+  estado.destinos = estado.destinos.filter(x => x !== id); plan.tramos = null; guardarEstado(); pintarCaja();
+  aviso(`${l.nombre} salió de tu ruta.`);
+  if (!estado.destinos.length) editandoParadas = false;
+  pintarMiRuta();
 });
 
 // ---------- Caja "Comenzar recorrido" (arriba de la barra de inicio) ----------
@@ -901,7 +1091,7 @@ $("#caja-recorrido").addEventListener("click", () => {
     Object.assign(plan, { modo: c.modo, hasta: c.hasta, ids: c.ids, estaciones: c.estaciones, textoBase: c.textoBase, tramos: c.tramos });
     guia.reanudar = c.paso; guia.tramos = null;
   } else if (modo === "nuevo") {
-    plan.modo = "destino"; plan.tramos = null;
+    plan.modo = "destino"; plan.tramos = null; location.hash = "planificar"; return;   // se ve la ruta y desde ahí se inicia
   } else return;
   location.hash = "recorrido";
 });
@@ -958,10 +1148,7 @@ function candidatos() {
   const elegidos = obligatorios();
   const propios = l => estado.intereses.includes(l.categoria);
   const porDistancia = (a, b) => desdeOrigen(a) - desdeOrigen(b);
-  if (elegidos.length) {                              // los elegidos van siempre, aunque queden más lejos que la distancia máxima
-    const ids = new Set(elegidos.map(l => l.id));
-    return [...elegidos, ...repartidos(rango.filter(l => !ids.has(l.id) && propios(l) && desdeOrigen(l) >= MIN_BICI_KM).sort(porDistancia), 8 - elegidos.length)];
-  }
+  if (elegidos.length) return elegidos;                // la ruta es exactamente la que sumó la persona: no se agregan otros
   // Lugares de tus intereses a distancia de bici (no los pegados a la salida), repartidos hasta la distancia máxima
   const lejos = rango.filter(l => desdeOrigen(l) >= MIN_BICI_KM).sort(porDistancia);
   const propiosLejos = lejos.filter(propios);
@@ -976,15 +1163,15 @@ async function preguntarIA(pregunta) {
 const lineaEstacion = e => `${e.numero} · ${e.nombre} · a ${e.distM} m`;
 
 let armando = 0;
-async function armarRecorrido() {
-  if (plan.tramos) { $("#referencias").hidden = false; pintarRecorrido(); return; }   // volvió con la flecha: no se rearma (la guía sigue en el mismo paso)
+async function armarRecorrido({ vista = "recorrido" } = {}) {
+  if (plan.tramos) { if (vista === "miruta") return; $("#referencias").hidden = false; pintarRecorrido(); return; }   // volvió con la flecha: no se rearma (la guía sigue en el mismo paso)
   const sesion = ++armando, ahora = new Date();
   hojaRecorrido.poner(false);                      // recorrido nuevo: el panel arranca abierto
   $("#recorrido-resumen").textContent = "Armando tu recorrido…";
   $("#paso-texto").textContent = "Armando tu recorrido…"; $("#paso-meta").textContent = ""; $("#paso-icono").textContent = "…"; $("#iniciar").disabled = true;
   $("#propuesta-texto").textContent = ""; $("#paradas").innerHTML = ""; $("#referencias").hidden = true;
   const lista = candidatos(), elegidos = obligatorios().map(l => l.id);
-  const cuantos = Math.max(lugaresPorTiempo(plan.minutos), elegidos.length);   // los elegidos no se recortan por el tiempo
+  const cuantos = elegidos.length || lugaresPorTiempo(plan.minutos);
   if (!lista.length) { $("#recorrido-resumen").textContent = "No hay hotspots con esos filtros. Probá con más distancia."; return; }
 
   // 1) Opciones reales para que la IA elija: estaciones vigentes para retirar y para devolver cerca de cada lugar
@@ -1001,7 +1188,7 @@ async function armarRecorrido() {
   try {
     const json = await preguntarIA(`Armá un recorrido cultural en EcoBici saliendo de ${ORIGEN.nombre} (${ahora.getHours()} h).
 Tiempo: ${plan.minutos} minutos (elegí ${cuantos} lugar/es). Intereses: ${estado.intereses.join(", ")}. Clima: ${climaTexto()}.
-${elegidos.length ? `LUGARES OBLIGATORIOS (la persona los eligió, tienen que estar todos en el recorrido): ${elegidos.join(", ")}. Podés sumar otros solo si sobra tiempo.` : ""}
+${elegidos.length ? `LUGARES OBLIGATORIOS (la persona los eligió, tienen que estar todos en el recorrido): ${elegidos.join(", ")}. No sumes otros lugares.` : ""}
 ${plan.hasta ? `La persona quiere TERMINAR en "${plan.hasta.nombre}": ordená los lugares para que el último quede de camino hacia ahí.` : ""}
 LUGARES (id · nombre · categoría · km desde la salida · horario):
 ${lista.map(l => `${l.id} · ${l.nombre} · ${l.categoria} · ${fmtKm(desdeOrigen(l))} · ${l.horario ? HOR.resumen(l.horario) : "sin dato"}`).join("\n")}
@@ -1056,7 +1243,7 @@ Respondé en JSON: {"opciones":[número de opción elegida para el tramo 0, tram
   const ultimaBici = [...tramos].reverse().find(t => t.devolucion);
   plan.ids = ids; plan.tramos = tramos; plan.estaciones = { retiro, devolucion: ultimaBici?.devolucion || devol[ids[ids.length - 1]] };
   plan.textoBase = `${texto} ${porIA ? "(Recorrido armado por IA" + (eleccionIA ? ", incluido el trazado)" : ")") : "(Armado por reglas simples: la IA no respondió)"}`;
-  pintarRecorrido();
+  if (vista !== "miruta") pintarRecorrido();           // desde Mi ruta solo se calcula: la pantalla de la guía se arma al iniciar
 }
 
 /** Alternativa que más conviene sin IA: menor tiempo, con un descuento por ir por ciclovía. */
@@ -1153,6 +1340,7 @@ function pintarRecorrido() {
   pintarPaso();
   $("#iniciar").disabled = false;
   pintarMapaRecorrido(validos, elegida);
+  if (plan.autoIniciar) { plan.autoIniciar = false; if (!guia.activa) iniciarGuia(); }   // venía de «Iniciar pedaleo con GPS»
 }
 
 function pintarMapaRecorrido(validos, elegida) {

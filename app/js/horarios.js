@@ -174,5 +174,19 @@
     return dia && dia.texto ? null : { abierto: false, texto: "Cerrado hoy" };
   }
 
-  window.PedalitoHorarios = { bonito, interpretar, resumen, resumenActividad, estadoAhora, tramoCorto, tramoTexto, INICIAL, CORTO, nombreDias, grupos };
+  /**
+   * Semana de una actividad a partir de sus campos: `dias` ("lunes y miércoles a viernes"), `abre` y `cierra` ("11:00", "19:00").
+   * Devuelve la misma forma que interpretar() para mostrarla como grilla, o null si los días no se entienden (por ejemplo,
+   * fechas sueltas como "5, 6, 7 y 8 de noviembre"): ahí la app muestra el texto original.
+   */
+  function semanaActividad(dias, abre, cierra) {
+    const a = /^(\d{1,2}):(\d{2})/.exec(abre || ""), c = /^(\d{1,2}):(\d{2})/.exec(cierra || "");
+    const { dias: d } = parsearDias(norm(dias || ""));
+    if (!a || !c || !d.length) return null;
+    const ini = aMin(a[1], a[2]); let fin = aMin(c[1], c[2]); if (fin <= ini) fin += 1440;      // 19:00 a 02:00 cierra de madrugada
+    const semana = Array.from({ length: 7 }, (_, i) => d.includes(i) ? { cerrado: false, tramos: [{ ini, fin }] } : { cerrado: true, tramos: [], sinDato: true });
+    return { semana, notas: /feriado/.test(norm(dias)) ? ["Abre en feriados"] : [], ok: true, dudoso: false };
+  }
+
+  window.PedalitoHorarios = { bonito, interpretar, resumen, resumenActividad, semanaActividad, estadoAhora, tramoCorto, tramoTexto, INICIAL, CORTO, nombreDias, grupos };
 })();

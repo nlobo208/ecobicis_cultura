@@ -92,3 +92,13 @@ Qué probamos, qué descartamos y por qué. Las entradas más nuevas van arriba.
 **Decisiones de accesibilidad.** El rosa de los botones es `#b5005e` (no el `#f90083` de la paleta) para que el texto blanco tenga contraste AA; el texto secundario es `#64748b` y ningún texto baja de 12 px. El nombre de cada pestaña de la barra queda oculto a la vista pero legible para lectores de pantalla.
 
 **Lo que el Figma tiene y la app no (no se agregó).** Encabezado con logo y foto de perfil, foto de portada en la bienvenida, ítems de "Tus lugares frecuentes" y valoración con estrellas por lugar. Son contenido nuevo, no estilo; quedan para decidir aparte.
+
+## (17/11) · Pedalear pasa a ser "Mi ruta en bici", punto de partida con lugares frecuentes y enlace al racional
+
+**Pedalear = Mi ruta en bici.** El formulario de Planificar (Hasta, tiempo, distancia, "Sorprendeme") se reemplazó por la pantalla "Mi ruta en bici" del Figma: la ruta es exactamente la de los hotspots que se suman con «Agregar al recorrido» (cada tarjeta de Explorar tiene ese botón). Muestra minutos, kilómetros y porcentaje por ciclovía (salen del trazado real por calles, no se estiman), mapa, itinerario con la estación donde se retira la bici, y el impacto. «Iniciar pedaleo con GPS» arranca la guía paso a paso sin otro toque; «Modificar paradas» permite quitar paradas o sumar otras desde Explorar. El motor que arma la ruta es el mismo de antes, pero ahora no agrega hotspots que la persona no eligió.
+
+**Qué se estima y qué no.** El CO₂ evitado es una estimación: 0,12 kg por km en auto (un auto promedio emite unos 120 g/km) por los km en bici, y la pantalla lo dice. El "% por ciclovía" es el del trazado elegido, ponderado por metros.
+
+**Punto de partida.** Pantalla "Elegí tu punto de partida" con buscador, estaciones cercanas (con la disponibilidad de ahora o estimada) y lugares frecuentes (Casa, Trabajo…), que se editan en "Gestioná tus accesos rápidos" y se guardan solo en este navegador.
+
+**El racional.** El Perfil tiene un enlace a la página `pirueta/` ("Racional · Pirueta 01", datos de EcoBici 2024 como composición visual).
