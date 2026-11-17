@@ -82,3 +82,13 @@ Qué probamos, qué descartamos y por qué. Las entradas más nuevas van arriba.
 **Por qué Groq y por qué en borrador.** Se usa Groq porque es la clave que ya tenemos (no hace falta una cuenta paga de otro proveedor). Cada búsqueda web gasta mucho cupo del plan gratuito (100.000 a 160.000 tokens por llamada, con un límite de ~8.000 por minuto), por eso el flujo es lento pero entra en un día. Para las fichas fijas de los hotspots se usa Wikipedia y Wikidata, que gastan unos 700 tokens por lugar y dejan la fuente a la vista.
 
 **Pasaporte cultural (pirueta).** Cada lugar visitado suma un sello en la página de su barrio, y los hotspots que faltan quedan como huecos para descubrir. Al terminar un recorrido, los sellos nuevos se estampan con una animación. Hoy los sellos usan una forma base (anillo e iniciales); los dibujos se cargan en app/img/sellos/<id>.png y se avisan en app/data/sellos.js.
+
+## (17/11) · Rediseño visual según Figma "Pedalito 3.0"
+
+**Qué cambió.** Solo lo visual: tipografía Plus Jakarta Sans (antes Inter), fondo lavanda claro con manchas de color suaves, botones y chips en píldora rosa, tarjetas blancas con borde fino, barra de navegación flotante blanca con la pestaña activa en círculo rosa, cajas de datos en azul y paneles con esquinas de 32 px. **No cambió** el contenido, el orden de las pantallas, los textos, ni ids y clases del código.
+
+**Cómo está hecho.** Los colores y la fuente están como variables al inicio de `app/style.css` (`:root`). Los estilos de cada componente nuevo van en el bloque "REDISEÑO · Pedalito 3.0" al final del mismo archivo, que pisa a los de arriba; así se puede ajustar o revertir sin tocar el resto.
+
+**Decisiones de accesibilidad.** El rosa de los botones es `#b5005e` (no el `#f90083` de la paleta) para que el texto blanco tenga contraste AA; el texto secundario es `#64748b` y ningún texto baja de 12 px. El nombre de cada pestaña de la barra queda oculto a la vista pero legible para lectores de pantalla.
+
+**Lo que el Figma tiene y la app no (no se agregó).** Encabezado con logo y foto de perfil, foto de portada en la bienvenida, ítems de "Tus lugares frecuentes" y valoración con estrellas por lugar. Son contenido nuevo, no estilo; quedan para decidir aparte.

@@ -46,7 +46,7 @@ const INTERESES = ["Anfiteatro", "Bar", "Biblioteca", "Café", "Centro cultural"
   "Monumentos y lugares históricos", "Museo", "Restaurante", "Sala de cine", "Sala de teatro"];
 const COLORES = ["naranja", "celeste", "verde", "rosa"];       // orden de las tarjetas apiladas de Explorar
 const VELOCIDAD_KMH = 14;                                       // para estimar minutos de viaje
-const LUGARES_POR_TIEMPO = { 30: 1, 60: 2, 120: 3 };
+const lugaresPorTiempo = min => (min <= 45 ? 1 : min <= 90 ? 2 : min <= 150 ? 3 : 4);   // 30 min → 1, 1 h → 2, 2 h → 3; los tiempos propios siguen la misma escala
 const MAX_LISTA = 24;
 
 // ---------- Estado guardado en el navegador ----------
@@ -55,7 +55,7 @@ const estado = Object.assign({
   email: "", nombre: "", intereses: [], km: 0, salidas: 0, visitados: [], destinos: [],
   calificaciones: {}, guardados: [], sellos: {}, historial: [], ultimo: null
 }, leerEstado());
-const plan = { modo: "sorpresa", minutos: 60, maxKm: 5, hasta: null, ids: [], km: 0, estaciones: null };
+const plan = { modo: "destino", minutos: 60, maxKm: 5, hasta: null, ids: [], km: 0, estaciones: null };
 
 /** Un recorrido guardado de hace más de 6 horas ya no sirve (las estaciones y la hora cambiaron). */
 const VIGENCIA_EN_CURSO_MS = 6 * 60 * 60 * 1000;
@@ -263,6 +263,15 @@ $("#confirmar-origen").addEventListener("click", () => {
   if (!seleccion) return;
   fijarOrigen(seleccion);
   location.hash = "inicio";
+});
+
+// Referencias del mapa del recorrido: el "−" las oculta para ver más pasos; el "+" las vuelve a mostrar
+$("#referencias-boton").addEventListener("click", () => {
+  const cuerpo = $("#referencias-cuerpo"), boton = $("#referencias-boton"), ocultar = !cuerpo.hidden;
+  cuerpo.hidden = ocultar;
+  boton.textContent = ocultar ? "+" : "−";
+  boton.setAttribute("aria-expanded", String(!ocultar));
+  boton.setAttribute("aria-label", ocultar ? "Mostrar las referencias del mapa" : "Ocultar las referencias del mapa");
 });
 
 // ---------- 03 · Home ----------
@@ -845,18 +854,26 @@ $("#sugerencias-hasta").addEventListener("click", e => {
   plan.hasta = { nombre: s.nombre, lat: s.lat, lon: s.lon }; plan.tramos = null;
   $("#hasta").value = s.nombre; $("#sugerencias-hasta").hidden = true;
 });
-$("#tiempos").addEventListener("click", e => {
-  if (!e.target.dataset.min) return;
-  plan.minutos = Number(e.target.dataset.min);
-  $$("#tiempos .chip").forEach(c => c.classList.toggle("activo", c === e.target));
-});
-$("#distancias").addEventListener("click", e => {
-  if (!e.target.dataset.km) return;
-  plan.maxKm = Number(e.target.dataset.km);
-  $$("#distancias .chip").forEach(c => c.classList.toggle("activo", c === e.target));
-});
+// Tiempo y distancia: tres opciones fijas y "Otro", que abre un campo para escribir el valor propio
+function elegirOpcion({ lista, otro, campo, entrada, clave, minimo, maximo, aplicar }) {
+  $(lista).addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    const esOtro = b.dataset.otro === otro;
+    $$(`${lista} .chip`).forEach(c => { c.classList.toggle("activo", c === b); if (c.dataset.otro) c.setAttribute("aria-expanded", String(esOtro && c === b)); });
+    $(campo).hidden = !esOtro;
+    if (esOtro) { $(entrada).focus(); usarValor(); } else if (b.dataset[clave]) aplicar(Number(b.dataset[clave]));
+  });
+  function usarValor() {
+    const v = parseFloat($(entrada).value.replace(",", "."));
+    if (Number.isFinite(v)) aplicar(Math.min(maximo, Math.max(minimo, v)));   // fuera de rango: se acerca al límite; vacío: queda el valor anterior
+  }
+  $(entrada).addEventListener("input", usarValor);
+  $(entrada).addEventListener("blur", () => { const v = parseFloat($(entrada).value.replace(",", ".")); if (Number.isFinite(v)) $(entrada).value = Math.min(maximo, Math.max(minimo, v)); });
+}
+elegirOpcion({ lista: "#tiempos", otro: "min", campo: "#otro-min", entrada: "#min-otro", clave: "min", minimo: 10, maximo: 480, aplicar: v => { plan.minutos = v; } });
+elegirOpcion({ lista: "#distancias", otro: "km", campo: "#otro-km", entrada: "#km-otro", clave: "km", minimo: 1, maximo: 40, aplicar: v => { plan.maxKm = v; } });
 $("#buscar-recorrido").addEventListener("click", () => {
-  if (plan.modo === "destino" && !estado.destinos.length) { aviso("Sumá al menos un espacio o elegí «Sorprendeme»."); return; }
+  if (plan.modo === "destino" && !estado.destinos.length) { aviso("Sumá al menos un hotspot para armar tu recorrido."); return; }
   plan.tramos = null; location.hash = "recorrido";                // un recorrido nuevo cada vez
 });
 
@@ -958,14 +975,14 @@ const lineaEstacion = e => `${e.numero} · ${e.nombre} · a ${e.distM} m`;
 
 let armando = 0;
 async function armarRecorrido() {
-  if (plan.tramos) { $("#leyenda").hidden = false; pintarRecorrido(); return; }   // volvió con la flecha: no se rearma (la guía sigue en el mismo paso)
+  if (plan.tramos) { $("#referencias").hidden = false; pintarRecorrido(); return; }   // volvió con la flecha: no se rearma (la guía sigue en el mismo paso)
   const sesion = ++armando, ahora = new Date();
   hojaRecorrido.poner(false);                      // recorrido nuevo: el panel arranca abierto
   $("#recorrido-resumen").textContent = "Armando tu recorrido…";
   $("#paso-texto").textContent = "Armando tu recorrido…"; $("#paso-meta").textContent = ""; $("#paso-icono").textContent = "…"; $("#iniciar").disabled = true;
-  $("#propuesta-texto").textContent = ""; $("#paradas").innerHTML = ""; $("#leyenda").hidden = true;
+  $("#propuesta-texto").textContent = ""; $("#paradas").innerHTML = ""; $("#referencias").hidden = true;
   const lista = candidatos(), elegidos = obligatorios().map(l => l.id);
-  const cuantos = Math.max(LUGARES_POR_TIEMPO[plan.minutos], elegidos.length);   // los elegidos no se recortan por el tiempo
+  const cuantos = Math.max(lugaresPorTiempo(plan.minutos), elegidos.length);   // los elegidos no se recortan por el tiempo
   if (!lista.length) { $("#recorrido-resumen").textContent = "No hay hotspots con esos filtros. Probá con más distancia."; return; }
 
   // 1) Opciones reales para que la IA elija: estaciones vigentes para retirar y para devolver cerca de cada lugar
@@ -1112,7 +1129,7 @@ function pintarRecorrido() {
   plan.mBici = sum("bici"); plan.mPie = sum("pie"); plan.km = plan.mBici / 1000; plan.minutosTotal = minutosDe(seg);
 
   $("#recorrido-resumen").textContent = `${fmtM(plan.mBici)} en bici · ${fmtM(plan.mPie)} a pie · ${plan.minutosTotal} min`;
-  $("#leyenda").hidden = false;
+  $("#referencias").hidden = false;
   $("#propuesta-texto").textContent = plan.textoBase + (fallidos ? ` No pudimos calcular el trazado por calles de ${fallidos} tramo${fallidos > 1 ? "s" : ""}: no se dibujan para no mostrarte un camino que atraviese edificios.` : "");
 
   // Resumen por tramo, en tarjetas apiladas
@@ -1376,15 +1393,23 @@ function pintarCierre() {
     caja.innerHTML = nuevos.map((l, i) => `<div style="--d:${(0.35 + i * 0.5).toFixed(2)}s;--tinta:${TINTAS[i % TINTAS.length]}">${selloHTML(l, true, "estampa")}</div>`).join("");
     vibrar([30, 80, 30]);
   }
+  // Dos preguntas por hotspot: qué te pareció el lugar y qué te pareció la experiencia (1 a 5 estrellas cada una)
+  const estrellas = (l, tema, n, etiqueta) => `<div class="pregunta"><span>${etiqueta}</span><span class="estrellas" role="group" aria-label="${etiqueta}: ${esc(l.nombre)}">
+      ${[1, 2, 3, 4, 5].map(i => `<button data-lugar="${l.id}" data-tema="${tema}" data-n="${i}" aria-label="${i} de 5">${i <= n ? "★" : "☆"}</button>`).join("")}</span></div>`;
   $("#calificar").innerHTML = u.ids.map(porId).map(l => {
-    const n = estado.calificaciones[l.id] || 0;
-    return `<div class="calificacion"><span>${esc(l.nombre)}</span><span class="estrellas" role="group" aria-label="Calificar ${esc(l.nombre)}">
-      ${[1, 2, 3, 4, 5].map(i => `<button data-lugar="${l.id}" data-n="${i}" aria-label="${i} de 5">${i <= n ? "★" : "☆"}</button>`).join("")}</span></div>`;
+    const c = calificacionDe(l.id);
+    return `<div class="calificacion"><strong>${esc(l.nombre)}</strong>
+      ${estrellas(l, "lugar", c.lugar, "¿Qué te pareció el lugar?")}${estrellas(l, "experiencia", c.experiencia, "¿Qué te pareció la experiencia?")}</div>`;
   }).join("");
+}
+/** Calificación de un hotspot: { lugar, experiencia }. Las guardadas antes con un solo número cuentan como "lugar". */
+function calificacionDe(id) {
+  const c = estado.calificaciones[id];
+  return typeof c === "number" ? { lugar: c, experiencia: 0 } : { lugar: c?.lugar || 0, experiencia: c?.experiencia || 0 };
 }
 $("#calificar").addEventListener("click", e => {
   const b = e.target.closest("button[data-n]"); if (!b) return;
-  estado.calificaciones[b.dataset.lugar] = Number(b.dataset.n);
+  estado.calificaciones[b.dataset.lugar] = { ...calificacionDe(b.dataset.lugar), [b.dataset.tema]: Number(b.dataset.n) };
   guardarEstado(); pintarCierre();
 });
 $("#guardar-volver").addEventListener("click", () => {
@@ -1395,7 +1420,7 @@ $("#guardar-volver").addEventListener("click", () => {
   estado.sellos = estado.sellos || {};
   u.ids.forEach(id => { if (!estado.sellos[id]) estado.sellos[id] = new Date().toISOString(); });
   $("#sellos-nuevos").dataset.listo = "";                 // el próximo cierre vuelve a estampar
-  estado.destinos = []; plan.hasta = null; plan.modo = "sorpresa";
+  estado.destinos = []; plan.hasta = null; plan.modo = "destino";
   guardarEstado();
   location.hash = "compartir";                  // el cierre del viaje sigue en Compartir
 });

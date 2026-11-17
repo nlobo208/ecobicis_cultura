@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pedalito · Cultura en EcoBici</title>
   <meta name="description" content="Pedalito arma recorridos culturales en EcoBici por Buenos Aires: museos, teatros, ferias y más, según dónde estás.">
-  <meta name="theme-color" content="#092957">
+  <meta name="theme-color" content="#f8f9fc">
   <link rel="icon" href="data:,">   <!-- sin ícono propio todavía: evita el pedido de /favicon.ico que daba error 404 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -154,8 +154,7 @@
         <input id="hasta" type="search" placeholder="⌕ ¿Dónde querés terminar?" autocomplete="off">
       </label>
       <ul class="sugerencias" id="sugerencias-hasta" hidden></ul>
-      <h2>Modo</h2>
-      <button class="fila-opcion activo" data-modo="sorpresa">◎ Sorprendeme con hotspots cerca <span aria-hidden="true">→</span></button>
+      <h2>Hotspots a visitar</h2>
       <button class="fila-opcion" data-modo="destino"><span id="destino-elegido">⌖ Buscar museo, café, teatro…</span> <span aria-hidden="true">+</span></button>
       <ul class="destinos-elegidos" id="destinos-elegidos" hidden></ul>
       <button class="fila-opcion agregar" id="agregar-espacio" type="button" hidden>+ Agregar otro espacio</button>
@@ -170,13 +169,21 @@
         <button class="chip" data-min="30">30 min</button>
         <button class="chip activo" data-min="60">1 hora</button>
         <button class="chip" data-min="120">2 horas</button>
+        <button class="chip" data-otro="min" aria-expanded="false">Otro</button>
       </div>
+      <label class="campo-texto otro-valor" id="otro-min" hidden>Minutos que tenés (de 10 a 480)
+        <input type="number" id="min-otro" inputmode="numeric" min="10" max="480" step="5" placeholder="Por ejemplo, 90">
+      </label>
       <h2>Distancia máxima</h2>
       <div class="chips" id="distancias">
         <button class="chip" data-km="3">Hasta 3 km</button>
         <button class="chip activo" data-km="5">Hasta 5 km</button>
         <button class="chip" data-km="8">Hasta 8 km</button>
+        <button class="chip" data-otro="km" aria-expanded="false">Otro</button>
       </div>
+      <label class="campo-texto otro-valor" id="otro-km" hidden>Kilómetros máximos (de 1 a 40)
+        <input type="number" id="km-otro" inputmode="decimal" min="1" max="40" step="0.5" placeholder="Por ejemplo, 12">
+      </label>
     </div>
     <button class="boton fijo" id="buscar-recorrido">Buscar recorrido <span aria-hidden="true">→</span></button>
   </section>
@@ -201,7 +208,13 @@
         </div>
         <h1>Tu recorrido en EcoBici</h1>
         <p class="sub" id="recorrido-resumen">Armando tu propuesta…</p>
-        <div class="capsulas leyenda" id="leyenda" hidden>
+        <div class="referencias" id="referencias" hidden>
+        <div class="referencias-cab">
+          <span class="etiqueta">Referencias del mapa</span>
+          <button type="button" class="menos" id="referencias-boton" aria-expanded="true" aria-controls="referencias-cuerpo" aria-label="Ocultar las referencias del mapa">−</button>
+        </div>
+        <div class="referencias-cuerpo" id="referencias-cuerpo">
+        <div class="capsulas leyenda" id="leyenda">
           <span class="capsula"><i class="muestra bici"></i>En bici</span>
           <span class="capsula"><i class="muestra pie"></i>Caminando</span>
           <span class="capsula"><i class="muestra cicl"></i>Ciclovías</span>
@@ -212,6 +225,8 @@
           <li><i style="background:#f76c09"></i>Medio</li>
           <li><i style="background:#ffd400"></i>Alto</li>
         </ul>
+        </div>
+        </div>
         <p class="nota" id="propuesta-texto"></p>
         <div class="apiladas pasos" id="paradas"></div>
       </div>
@@ -231,9 +246,9 @@
       </div>
       <h2 id="sellos-titulo" hidden>Sellos nuevos en tu pasaporte</h2>
       <div class="sellos-nuevos" id="sellos-nuevos" hidden></div>
-      <h2>¿Qué te parecieron?</h2>
+      <h2>¿Qué te pareció cada hotspot?</h2>
       <div id="calificar"></div>
-      <p class="nota">Tus ratings afinan futuras recomendaciones.</p>
+      <p class="nota">Tus calificaciones afinan futuras recomendaciones.</p>
     </div>
     <button class="boton fijo" id="guardar-volver">Guardar y volver <span aria-hidden="true">→</span></button>
   </section>

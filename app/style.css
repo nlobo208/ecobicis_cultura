@@ -1,40 +1,38 @@
-/* Pedalito · estilos del prototipo final (Figma: UX_pedalito2, 390 × 844)
-   Tokens tomados de los estilos de Figma "Pedalito/…". Mobile primero; en pantallas anchas la app
+/* Pedalito · estilos del prototipo final (Figma: Pedalito 3.0, 390 × 844)
+   Rediseño visual: tipografía Plus Jakarta Sans, fondo lavanda claro con degradés suaves, botones píldora rosas,
+   tarjetas blancas con borde fino y barra de navegación flotante. Mobile primero; en pantallas anchas la app
    queda como una columna centrada. */
 
 :root {
-  --noche: #092957;        /* Pedalito/01 Azul noche */
-  --crema: #fffcfa;        /* Pedalito/02 Crema */
-  --rosa: #f90083;         /* Pedalito/03 Rosa */
-  --naranja: #f76c09;      /* Pedalito/05 Naranja */
-  --verde: #38ea59;        /* Pedalito/07 Verde */
-  --celeste: #00baf1;      /* Pedalito/08 Celeste */
-  --azul: #203ae9;         /* Pedalito/09 Azul */
-  --texto-suave: rgba(9, 41, 87, .68);  /* En Figma es 30 %: no llega a contraste AA, se subió */
-  --borde: rgba(9, 41, 87, .15);
+  --fuente: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --noche: #0b192c;        /* texto y superficies oscuras (Neutral de Figma) */
+  --marino: #092957;       /* Pedalito/01 Azul noche: logo y detalles de marca */
+  --crema: #ffffff;        /* superficies claras: tarjetas, paneles y texto sobre color */
+  --fondo: #f8f9fc;        /* fondo general de las pantallas */
+  --rosa: #e30077;         /* acento: puntos, etiquetas, pestaña activa */
+  --boton: #b5005e;        /* botones y chips activos (rosa oscuro, con contraste AA sobre blanco) */
+  --naranja: #c25200;      /* acento naranja (texto y chips) */
+  --verde: #1db954;
+  --celeste: #00baf1;
+  --azul: #1a35e6;         /* Secondary de Figma */
+  --texto-suave: #64748b;  /* texto secundario: contraste AA sobre blanco y sobre --fondo */
+  --borde: #e2e8f0;
+  --sombra-suave: 0 1px 2px rgba(0, 0, 0, .05);
+  --sombra-flota: 0 12px 28px -4px rgba(0, 18, 49, .12);
   --radio-pantalla: 36px;
   --gutter: 22px;
-  --nav-alto: 64px;
+  --nav-alto: 68px;
 
-  /* Degradado multicolor de botones, chips y cajas (aproximación CSS de los 16 puntos del mesh de Figma) */
-  --mesh:
-    radial-gradient(60% 55% at 0% 0%, #0053e2 0%, transparent 70%),
-    radial-gradient(55% 55% at 0% 33%, #092957 0%, transparent 75%),
-    radial-gradient(60% 60% at 67% 33%, #097df2 0%, transparent 70%),
-    radial-gradient(45% 50% at 100% 33%, #80b359 0%, transparent 70%),
-    radial-gradient(50% 50% at 33% 67%, #01d9d9 0%, transparent 70%),
-    radial-gradient(50% 45% at 67% 70%, #f7900a 0%, transparent 70%),
-    radial-gradient(45% 45% at 33% 100%, #f7900a 0%, transparent 70%),
-    radial-gradient(45% 45% at 0% 100%, #05d6a1 0%, transparent 70%),
-    radial-gradient(50% 50% at 100% 100%, #0a53ff 0%, transparent 70%),
-    linear-gradient(135deg, #165cd3, #1a99b3);
+  /* Degradados: azul para cajas de datos; rosa suave para fondos y botones destacados */
+  --mesh: linear-gradient(135deg, #1a35e6 0%, #0b2bd1 100%);
+  --boton-fondo: linear-gradient(135deg, #e30077 0%, #b5005e 100%);
 }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: #e9ecf1; color: var(--noche);
-  font: 400 15px/1.3 "Inter", system-ui, sans-serif;
+  font: 400 15px/1.3 var(--fuente);
 }
 h1 { margin: 0; font-size: 32px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; }
 h2 { margin: 18px 0 8px; font-size: 16px; font-weight: 700; }
@@ -67,7 +65,7 @@ a { color: inherit; }
 .boton {
   position: relative; display: flex; align-items: center; justify-content: space-between;
   width: 100%; height: 56px; padding: 0 22px 0 24px; border: 0; border-radius: 18px; cursor: pointer;
-  color: var(--crema); font: 600 15px/1.3 "Inter", system-ui, sans-serif; text-decoration: none;
+  color: var(--crema); font: 600 15px/1.3 var(--fuente); text-decoration: none;
   background: var(--mesh); isolation: isolate;
 }
 .boton::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
@@ -88,20 +86,20 @@ a { color: inherit; }
 .campo-texto { display: flex; flex-direction: column; gap: 8px; font-weight: 600; }
 .campo-texto input {
   height: 52px; padding: 0 18px; border: 2px solid var(--azul); border-radius: 16px; background: #fff;
-  font: 600 14px "Inter", system-ui, sans-serif; color: var(--noche);
+  font: 600 14px var(--fuente); color: var(--noche);
 }
 .campo-texto input::placeholder { color: var(--texto-suave); }
 .chips { display: flex; flex-wrap: wrap; gap: 10px 8px; }
 .chip {
   position: relative; min-height: 44px; padding: 10px 18px; border: 2px solid var(--azul); border-radius: 999px;
-  background: transparent; color: var(--noche); font: 600 15px/1.3 "Inter", system-ui, sans-serif; cursor: pointer; isolation: isolate;
+  background: transparent; color: var(--noche); font: 600 15px/1.3 var(--fuente); cursor: pointer; isolation: isolate;
 }
 .chip.activo { border-color: transparent; color: var(--crema); background: var(--mesh); }
 .chip.activo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(14, 15, 18, .12); z-index: -1; }
 .fila-opcion {
   position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; height: 56px;
   padding: 0 22px 0 24px; margin-top: 8px; border: 2px solid var(--azul); border-radius: 18px; background: transparent;
-  color: var(--noche); font: 600 15px "Inter", system-ui, sans-serif; text-align: left; cursor: pointer; isolation: isolate;
+  color: var(--noche); font: 600 15px var(--fuente); text-align: left; cursor: pointer; isolation: isolate;
 }
 .fila-opcion span:last-child { font-weight: 700; font-size: 18px; color: var(--azul); }
 .fila-opcion.activo { border-color: transparent; color: var(--crema); background: var(--mesh); }
@@ -236,11 +234,11 @@ a { color: inherit; }
 #ubicacion .sugerencias { margin: 0; }
 .sugerencias { list-style: none; margin: -6px 0 0; padding: 4px; border: 1px solid var(--borde); border-radius: 18px; background: #fff; box-shadow: 0 6px 18px rgba(9, 41, 87, .1); }
 .sugerencias[hidden] { display: none; }
-.sugerencias button { width: 100%; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 14px; background: transparent; text-align: left; font: 600 14px "Inter", system-ui, sans-serif; color: var(--noche); cursor: pointer; }
+.sugerencias button { width: 100%; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 14px; background: transparent; text-align: left; font: 600 14px var(--fuente); color: var(--noche); cursor: pointer; }
 .sugerencias button:hover, .sugerencias button:focus-visible { background: rgba(32, 58, 233, .08); }
 .sugerencias small { display: block; font-weight: 400; color: var(--texto-suave); }
 .pill-origen { display: inline-block; margin-top: 10px; padding: 8px 14px; border: 2px solid var(--azul); border-radius: 999px; color: var(--noche); font-size: 14px; font-weight: 700; text-decoration: none; }
-.maplibregl-popup-content { font: 600 13px "Inter", system-ui, sans-serif; color: var(--noche); border-radius: 14px; }
+.maplibregl-popup-content { font: 600 13px var(--fuente); color: var(--noche); border-radius: 14px; }
 
 /* ---------- Home y Explorar: mapa de fondo + panel deslizable ---------- */
 .pantalla.con-hoja { position: fixed; top: 0; bottom: 0; left: 50%; width: min(100vw, 430px); transform: translateX(-50%); padding: 0; overflow: hidden; }
@@ -266,7 +264,7 @@ a { color: inherit; }
 .tarjeta-lugar .enlace { display: block; color: inherit; text-decoration: none; }
 .mas {
   position: absolute; top: 8px; right: 8px; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center;
-  border: 0; border-radius: 50%; background: rgba(255, 252, 250, .95); color: var(--noche); font: 700 24px/1 "Inter", system-ui, sans-serif;
+  border: 0; border-radius: 50%; background: rgba(255, 252, 250, .95); color: var(--noche); font: 700 24px/1 var(--fuente);
   box-shadow: 0 2px 8px rgba(9, 41, 87, .25); cursor: pointer;
 }
 .mas[aria-pressed="true"] { background: var(--azul); color: var(--crema); font-size: 19px; }
@@ -305,7 +303,7 @@ a { color: inherit; }
   position: relative; display: flex; align-items: center; gap: 14px; padding: 14px 14px 14px 16px; border-radius: 24px;
   background: var(--noche); color: var(--crema); box-shadow: 0 6px 18px rgba(9, 41, 87, .25);
 }
-.paso-icono { flex: none; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: var(--azul); font: 700 28px/1 "Inter", system-ui, sans-serif; }
+.paso-icono { flex: none; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: var(--azul); font: 700 28px/1 var(--fuente); }
 .paso-icono.llegada { background: var(--rosa); }
 .paso-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .paso-cuerpo .etiqueta { opacity: .75; }
@@ -314,7 +312,7 @@ a { color: inherit; }
 
 /* ---------- Cápsulas azules (leyenda del mapa y datos sueltos) ---------- */
 .capsulas { display: flex; flex-wrap: wrap; gap: 8px; }
-.capsula { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 16px; border: 2px solid var(--azul); border-radius: 999px; color: var(--noche); font: 600 14px/1.3 "Inter", system-ui, sans-serif; background: transparent; }
+.capsula { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 16px; border: 2px solid var(--azul); border-radius: 999px; color: var(--noche); font: 600 14px/1.3 var(--fuente); background: transparent; }
 .capsula .muestra { margin: 0; width: 26px; }
 
 /* ---------- Llegada: círculo rosa desde la derecha + confeti ---------- */
@@ -371,7 +369,7 @@ a { color: inherit; }
 /* ---------- Estaciones: círculo con el número de bicis (o de anclajes libres) y color según la ocupación ---------- */
 .est-pin {
   width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%;
-  background: var(--azul); color: #fff; font: 700 13px/1 "Inter", system-ui, sans-serif; cursor: pointer;
+  background: var(--azul); color: #fff; font: 700 13px/1 var(--fuente); cursor: pointer;
   box-shadow: 0 2px 8px rgba(9, 41, 87, .35);
 }
 .est-pin.claro { color: var(--noche); }                         /* texto oscuro sobre el amarillo */
@@ -400,18 +398,18 @@ a { color: inherit; }
 /* "Te desviaste": aviso sobre la caja del paso */
 .desvio { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 18px; background: #fff3e0; border: 2px solid var(--naranja); color: var(--noche); font-weight: 700; font-size: 15px; }
 .desvio[hidden] { display: none; }
-.desvio button { margin-left: auto; min-height: 44px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--noche); color: var(--crema); font: 700 14px "Inter", system-ui, sans-serif; cursor: pointer; }
+.desvio button { margin-left: auto; min-height: 44px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--noche); color: var(--crema); font: 700 14px var(--fuente); cursor: pointer; }
 
 /* Caja "Comenzar recorrido": va justo arriba de la barra de inicio y mide la mitad de alto que ella */
 .caja-recorrido {
   position: fixed; left: 50%; bottom: calc(22px + var(--nav-alto) + 8px); transform: translateX(-50%); z-index: 6;
   width: calc(min(100vw, 430px) - 2 * var(--gutter)); height: calc(var(--nav-alto) / 2);
   display: none; align-items: center; justify-content: space-between; padding: 0 20px; border: 0; border-radius: 20px;
-  background: var(--mesh); color: var(--crema); font: 700 15px "Inter", system-ui, sans-serif; cursor: pointer; isolation: isolate;
+  background: var(--mesh); color: var(--crema); font: 700 15px var(--fuente); cursor: pointer; isolation: isolate;
   box-shadow: 0 6px 18px rgba(9, 41, 87, .25);
 }
 .caja-recorrido.visible { display: flex; animation: entra-caja .3s cubic-bezier(.2, .8, .2, 1); }
-.caja-recorrido small { font: 600 13px "Inter", system-ui, sans-serif; opacity: .95; }
+.caja-recorrido small { font: 600 13px var(--fuente); opacity: .95; }
 @keyframes entra-caja { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) { .caja-recorrido.visible { animation: none; } }
 
@@ -484,3 +482,212 @@ a.donde { display: block; margin: 6px 0 0; color: var(--azul); font-size: 14px; 
 @keyframes ubi-pulso { to { box-shadow: 0 0 0 16px rgba(10,157,107,0); } }
 .ubi-boton { font-size: 20px; color: #0a9d6b; line-height: 1; }
 @media (prefers-reduced-motion: reduce) { .ubi-viva i { animation: none; } }
+
+/* =====================================================================================================
+   REDISEÑO · Pedalito 3.0 (Figma): solo lo visual (color, tipografía, formas, sombras). El contenido, el orden
+   de las partes y los ids/clases no cambian. Va al final para pisar los estilos de arriba; al ajustar una
+   regla de acá no hace falta tocar la original.
+   ===================================================================================================== */
+
+/* Fondo general: lavanda muy claro con manchas de color suaves (rosa arriba a la derecha, azul a la izquierda) */
+body { background: #e6e9f1; }
+.app {
+  background:
+    radial-gradient(70% 26% at 100% 0%, rgba(249, 0, 131, .09), transparent 70%),
+    radial-gradient(60% 30% at 0% 38%, rgba(59, 130, 246, .10), transparent 70%),
+    radial-gradient(60% 24% at 100% 78%, rgba(247, 108, 9, .06), transparent 70%),
+    var(--fondo);
+}
+h1 { font-weight: 800; letter-spacing: -.03em; }
+h2 { font-weight: 800; letter-spacing: -.01em; }
+.sub { font-weight: 500; }
+.nota { font-weight: 500; }
+.etiqueta { letter-spacing: .08em; opacity: 1; color: var(--texto-suave); }
+
+/* ---------- Botones: píldoras rosas con brillo suave ---------- */
+.boton {
+  justify-content: center; gap: 10px; height: 56px; padding: 0 28px; border-radius: 999px;
+  background: var(--boton); font-weight: 700; letter-spacing: .005em;
+  box-shadow: 0 10px 22px -8px rgba(181, 0, 94, .55);
+  transition: filter .15s ease;
+}
+.boton::after { display: none; }
+.boton span { font-size: 18px; font-weight: 700; }
+.boton:active { filter: brightness(.92); }   /* sin mover el botón: los fijos se centran con translateX y cualquier transform los corría hacia un costado */
+.boton.contorno { background: var(--crema); color: var(--noche); border: 1px solid var(--borde); box-shadow: var(--sombra-suave); }
+.boton.fijo { bottom: 24px; }
+.boton.info { box-shadow: none; }
+
+/* ---------- Campos y chips ---------- */
+.campo-texto input {
+  height: 54px; padding: 0 22px; border: 1px solid var(--borde); border-radius: 999px; background: var(--crema);
+  box-shadow: 0 2px 8px rgba(0, 18, 49, .05); font-weight: 600; color: var(--noche);
+}
+.campo-texto input:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
+.campo-texto input::placeholder { color: var(--texto-suave); font-weight: 500; }
+.chip {
+  border: 1px solid var(--borde); background: var(--crema); color: var(--noche); font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 18, 49, .08); transition: transform .12s ease, background .15s ease;
+}
+.chip:active { transform: scale(.97); }
+.chip.activo { border-color: transparent; background: var(--boton); color: #fff; box-shadow: 0 4px 12px -4px rgba(0, 18, 49, .35); }
+.chip.activo::before { content: "✓"; margin-right: 8px; font-weight: 800; }
+.chip.activo::after { display: none; }
+/* Los chips elegidos van alternando rosa, naranja y azul, como en el diseño */
+.chips .chip.activo:nth-child(3n + 2) { background: var(--naranja); }
+.chips .chip.activo:nth-child(3n) { background: var(--azul); }
+.fila-opcion {
+  border: 1px solid var(--borde); border-radius: 999px; background: var(--crema); color: var(--noche);
+  box-shadow: 0 1px 3px rgba(0, 18, 49, .08);
+}
+.fila-opcion span:last-child { color: var(--boton); }
+.fila-opcion.activo { background: var(--boton); border-color: transparent; color: #fff; }
+.fila-opcion.activo span:last-child { color: #fff; }
+.fila-opcion.activo::after { display: none; }
+.fila-opcion.agregar { border-style: dashed; border-color: #cbd5e1; color: var(--azul); background: #eef1fb; box-shadow: none; }
+.separador::before, .separador::after { background: var(--borde); }
+
+/* ---------- Cajas y tarjetas ---------- */
+.caja-info { border-radius: 32px; box-shadow: 0 16px 30px -14px rgba(26, 53, 230, .55); }
+.caja-info::after { display: none; }
+.caja-info strong { font-weight: 800; letter-spacing: -.03em; }
+.caja-info .mini { background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .3); }
+/* Tarjetas de lista (Explorar, Perfil, recorrido): blancas, con un tinte suave según el color de cada una y sin encimarse */
+.tarjeta-apilada, .apiladas.pasos .tarjeta-apilada {
+  min-height: 0; margin-bottom: 12px; padding: 18px 20px; border: 1px solid #d3dcfb; border-radius: 24px; filter: none;
+  background: #f3f6ff; color: var(--noche); box-shadow: var(--sombra-suave);
+}
+.tarjeta-apilada:last-child, .apiladas.pasos .tarjeta-apilada:last-child { margin-bottom: 0; }
+.tarjeta-apilada.rosa { background: #fff2f8; border-color: #fbc9e0; }
+.tarjeta-apilada.noche { background: var(--crema); border-color: var(--borde); }
+.tarjeta-apilada.naranja { background: #fff6ed; border-color: #fbd9b8; }
+.tarjeta-apilada.verde { background: #effaf3; border-color: #bfe8cd; }
+.tarjeta-apilada strong { font-weight: 800; font-size: 17px; color: var(--noche); }
+.tarjeta-apilada span { color: var(--texto-suave); opacity: 1; font-weight: 500; }
+.tarjeta-apilada .ver { color: var(--boton); font-weight: 800; }
+.caja-info .etiqueta, .pasaporte-tapa .etiqueta, .caja-info small { color: rgba(255, 255, 255, .85); }
+
+/* Tarjeta de hotspot (carrusel): blanca, borde fino y esquinas chicas, como en el diseño */
+.tarjeta-lugar { border: 1px solid var(--borde); border-radius: 8px; background: var(--crema); box-shadow: var(--sombra-suave); }
+.tarjeta-lugar .foto { background-color: var(--marino); }
+.tarjeta-lugar .foto.sin-imagen { background: var(--mesh); }
+.tarjeta-lugar strong { font-weight: 800; color: var(--noche); }
+.tarjeta-lugar .meta { color: var(--texto-suave); opacity: 1; font-weight: 500; }
+.tag { padding: 5px 11px; border-radius: 999px; background: var(--rosa); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.tag.naranja { background: var(--naranja); color: #fff; }
+.etiqueta-rosa { background: var(--rosa); font-weight: 800; border-radius: 999px; }
+.tendencias li a { border: 1px solid var(--borde); border-radius: 16px; background: var(--crema); box-shadow: var(--sombra-suave); }
+.tendencias .puesto { background: var(--boton); }
+.tendencias .cuantos { color: var(--boton); }
+
+/* ---------- Paneles que suben desde abajo ---------- */
+.hoja-desliz { background: var(--fondo); border-radius: 32px 32px 0 0; box-shadow: 0 -8px 28px rgba(0, 18, 49, .10); }
+.agarre span { width: 48px; height: 5px; background: #cbd5e1; }
+.panel-blanco { background: var(--fondo); border-radius: 32px 32px 0 0; box-shadow: 0 -8px 28px rgba(0, 18, 49, .10); }
+.franja-imagen { background: linear-gradient(135deg, #f90083 0%, #1a35e6 100%); }
+.ficha { background: var(--fondo); border-radius: 32px 32px 0 0; }
+.hero { background-color: var(--marino); }
+.redondo, .atras { background: rgba(255, 255, 255, .95); border: 1px solid var(--borde); color: var(--noche); box-shadow: 0 4px 14px rgba(0, 18, 49, .12); }
+
+/* ---------- Barra inferior: píldora blanca flotante, pestaña activa en círculo rosa ---------- */
+.nav {
+  height: var(--nav-alto); padding: 0 6px; border: 1px solid rgba(226, 232, 240, .9); border-radius: 999px;
+  background: rgba(255, 255, 255, .95); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+  color: var(--texto-suave); box-shadow: var(--sombra-flota); justify-content: space-around;
+}
+.nav a { min-width: 52px; min-height: 52px; padding: 0; }
+.nav a svg { width: 26px; height: 26px; stroke-width: 2; }
+/* El nombre de cada pestaña queda para lectores de pantalla (el aria-label ya lo dice); a la vista va solo el ícono */
+.nav a span, .nav a.activo span { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.nav a.activo { width: 56px; height: 56px; padding: 0; background: var(--rosa); color: #fff; box-shadow: 0 6px 14px -4px rgba(227, 0, 119, .55); }
+.nav a.activo::after { display: none; }
+.caja-recorrido { background: var(--boton); border-radius: 999px; box-shadow: 0 10px 22px -8px rgba(181, 0, 94, .55); bottom: calc(24px + var(--nav-alto) + 10px); }
+.toast { background: var(--noche); box-shadow: var(--sombra-flota); }
+
+/* ---------- Mapa, leyendas y pines ---------- */
+.mapa { border-radius: 32px; background: #e8edf5; }
+.lugar-pin { background: var(--rosa); }
+.leyenda-bicis i.cuadrado { background: var(--rosa); }
+.capsula { border: 1px solid var(--borde); background: var(--crema); box-shadow: var(--sombra-suave); font-weight: 700; }
+.chips-ficha span { border: 1px solid var(--borde); background: var(--crema); box-shadow: var(--sombra-suave); font-weight: 700; }
+.muestra, .muestra.bici { border-top-color: var(--boton); }
+.maplibregl-popup-content { border-radius: 16px; box-shadow: var(--sombra-flota); }
+
+/* ---------- Guía paso a paso ---------- */
+.paso-actual { background: var(--crema); color: var(--noche); border: 1px solid var(--borde); border-radius: 24px; box-shadow: var(--sombra-flota); }
+.paso-icono { background: var(--boton); color: #fff; }
+.paso-icono.llegada { background: var(--rosa); }
+.paso-cuerpo .etiqueta { color: var(--azul); opacity: 1; }
+.paso-meta { color: var(--texto-suave); opacity: 1; font-weight: 500; }
+.anillo-paso { border-color: var(--rosa); background: rgba(227, 0, 119, .16); }
+.desvio { background: #fff4e8; border: 1px solid var(--naranja); border-radius: 20px; }
+.desvio button { background: var(--boton); border-radius: 999px; }
+.circulo-rosa { background: var(--boton-fondo); }
+.caja-llegada { border-radius: 24px; }
+
+/* ---------- Horarios, ficha, dato curioso, pasaporte ---------- */
+.horarios { border: 1px solid var(--borde); border-radius: 24px; background: #eef1fb; box-shadow: var(--sombra-suave); }
+.horarios .etiqueta { color: var(--noche); }
+.estado { background: #e6f7ec; color: #0f7a3a; }
+.dia { background: var(--crema); border: 1px solid transparent; border-radius: 12px; }
+.dia.cerrado { background: transparent; }
+.dia.hoy { background: #fbe0ef; color: var(--boton); border-color: #f4b6d6; }
+.dia.hoy::after { display: none; }
+.dia.hoy.cerrado { background: #fbe0ef; }
+.dato-curioso { background: var(--noche); border-radius: 24px; }
+.dato-curioso strong { color: #7fd8ff; }
+.calificacion { border: 1px solid var(--borde); border-radius: 20px; background: var(--crema); box-shadow: var(--sombra-suave); }
+.estrellas button { color: #f5a300; }
+.pasaporte-tapa { border-radius: 32px; box-shadow: 0 16px 30px -14px rgba(26, 53, 230, .55); }
+.pasaporte-tapa::after { display: none; }
+.pasaporte-entrada { border: 1px solid var(--borde); border-radius: 999px; background: var(--crema); box-shadow: var(--sombra-suave); }
+.pagina-pasaporte { border: 1px solid var(--borde); border-radius: 24px; background: var(--crema); box-shadow: var(--sombra-suave); }
+.sugerencias { border: 1px solid var(--borde); border-radius: 20px; box-shadow: var(--sombra-flota); }
+.sugerencias button:hover, .sugerencias button:focus-visible { background: #eef1fb; }
+.destinos-elegidos li { border: 1px solid var(--borde); border-radius: 20px; background: var(--crema); box-shadow: var(--sombra-suave); }
+.destinos-elegidos button { color: var(--boton); }
+.pill-origen { border: 1px solid var(--borde); background: var(--crema); box-shadow: var(--sombra-suave); }
+a.donde, .enlace-info { color: var(--boton); }
+/* Semana de horarios: celdas un poco más anchas para que "Cerrado" no se parta en dos renglones */
+.horarios { padding: 14px 10px; }
+.semana { gap: 3px; }
+.dia { padding: 8px 0; }
+.dia span, .dia .cerrado { word-break: normal; overflow-wrap: normal; letter-spacing: -.01em; }
+
+/* ---------- Formas: estaciones EcoBici = cuadrados, hotspots = círculos (en el mapa y en las leyendas) ---------- */
+.est-pin { border-radius: 9px; }
+.est-pin.estimado { border-radius: 6px; }
+.est-pin.fondo { border-radius: 7px; }
+.lugar-pin { border-radius: 50%; }
+.leyenda-bicis i { border-radius: 4px; }
+.leyenda-bicis i.cuadrado { border-radius: 50%; }   /* la clase se llama "cuadrado" por historia: hoy marca los hotspots, que son círculos */
+.fila-opcion[data-modo="destino"].activo { background: var(--crema); color: var(--noche); border-color: var(--borde); }
+.fila-opcion[data-modo="destino"].activo span:last-child { color: var(--boton); }
+
+/* Tarjetas de lista: el tinte de fondo pasa a ser el protagonista (el azul, sobre todo, casi no se veía) */
+.tarjeta-apilada { background: #d9e2ff; border-color: #a9bbf7; }
+.tarjeta-apilada.rosa { background: #ffd6ea; border-color: #f7a3cc; }
+.tarjeta-apilada.noche { background: #e3e8f2; border-color: #c3ccdd; }
+.tarjeta-apilada.naranja { background: #ffe0bf; border-color: #f6bb85; }
+.tarjeta-apilada.verde { background: #c9f1d6; border-color: #8fd8a8; }
+
+/* ---------- Referencias del mapa plegables (− / +) ---------- */
+.referencias { display: flex; flex-direction: column; gap: 10px; }
+.referencias-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.referencias-cab .etiqueta { margin: 0; }
+.referencias-cuerpo { display: flex; flex-direction: column; gap: 10px; }
+.referencias-cuerpo[hidden] { display: none; }
+.menos {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center; padding: 0 0 3px; border: 1px solid var(--borde); border-radius: 50%;
+  background: var(--crema); color: var(--noche); font: 700 26px/1 var(--fuente); cursor: pointer; box-shadow: var(--sombra-suave);
+}
+
+/* ---------- "Otro": valor propio de tiempo o distancia ---------- */
+.otro-valor { margin-top: 10px; font-size: 14px; }
+.otro-valor[hidden] { display: none; }
+
+/* ---------- Calificar: dos preguntas por hotspot ---------- */
+.calificacion { flex-direction: column; align-items: stretch; gap: 10px; padding: 16px 18px; }
+.calificacion > strong { font-size: 16px; font-weight: 800; }
+.calificacion .pregunta { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; }
+.calificacion .pregunta > span:first-child { flex: 1; min-width: 0; }
