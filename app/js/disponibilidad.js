@@ -19,7 +19,7 @@
   let intervalo = null;
 
   // ---------- Colores ----------
-  const COLORES = { ninguna: "#111418", baja: "#e5202e", media: "#f76c09", alta: "#ffd400" };
+  const COLORES = { ninguna: "var(--n-ninguna)", baja: "var(--n-baja)", media: "var(--n-media)", alta: "var(--n-alta)" };   // los define style.css (blanco y negro: negro, trama densa, trama suave, blanco)
 
   /**
    * Nivel y color según qué parte de la estación está ocupada (bicis disponibles o anclajes libres sobre el total):
@@ -31,7 +31,7 @@
     if (n <= 0) return { nivel: "ninguna", color: COLORES.ninguna, claro: false, pct: 0 };
     const pct = Math.min(100, Math.max(1, Math.round(100 * n / Math.max(Number(capacidad) || n, n))));
     const nivel = pct <= 35 ? "baja" : pct <= 70 ? "media" : "alta";
-    return { nivel, color: COLORES[nivel], claro: nivel === "alta", pct };      // claro: el amarillo lleva texto oscuro
+    return { nivel, color: COLORES[nivel], claro: nivel === "media", pct };      // claro: el amarillo lleva texto oscuro
   }
 
   const distM = (a, b) => {

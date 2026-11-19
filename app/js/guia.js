@@ -153,7 +153,7 @@ Respondé en JSON: {"textos":["…"]} con exactamente ${lote.length} textos, en 
 
   // ---------- Confeti ----------
   const Confeti = (() => {
-    const COLORES = ["#f90083", "#00baf1", "#ffd400", "#203ae9", "#38ea59", "#f76c09"];
+    const COLORES = ["#8E6BBF", "#C8102E", "#7FB2C9", "#F2B705", "#2F6B4F", "#B5543A"];
     const DURACION = 3400;
     let canvas, ctx, particulas = [], inicio = 0, raf = 0;
 

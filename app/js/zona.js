@@ -51,10 +51,10 @@
       mapa.addSource("zona-contorno", { type: "geojson", data: contorno || zona });
       const primera = mapa.getStyle().layers.find(l => l.type === "symbol")?.id;   // debajo de los nombres de calles
       mapa.addLayer({ id: "zona-mascara", type: "fill", source: "zona-fuera",
-        paint: { "fill-color": "#6f7680", "fill-opacity": .55, "fill-antialias": false } }, primera);
-      mapa.addLayer({ id: "zona-relleno", type: "fill", source: "zona", paint: { "fill-color": "#203ae9", "fill-opacity": .04 } }, primera);
+        paint: { "fill-color": "#3A3A3C", "fill-opacity": .32, "fill-antialias": false } }, primera);
+      mapa.addLayer({ id: "zona-relleno", type: "fill", source: "zona", paint: { "fill-color": "#3A3A3C", "fill-opacity": 0 } }, primera);
       mapa.addLayer({ id: "zona-borde", type: "line", source: "zona-contorno",
-        paint: { "line-color": "#092957", "line-width": 1.5, "line-opacity": .55, "line-dasharray": [2, 2] } }, primera);
+        paint: { "line-color": "#3A3A3C", "line-width": 2, "line-opacity": 1, "line-dasharray": [2, 2] } }, primera);
     };
     if (mapa.isStyleLoaded()) agregar(); else mapa.on("style.load", agregar);
   }

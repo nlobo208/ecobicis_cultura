@@ -44,6 +44,7 @@ try {
 function fijarOrigen(punto) {
   Object.assign(ORIGEN, { nombre: punto.nombre, lat: punto.lat, lon: punto.lon });
   origenElegido = true;
+  vistaMapa = null;                                // los mapas vuelven a centrarse en el nuevo punto de partida
   try { sessionStorage.setItem(CLAVE_ORIGEN, JSON.stringify({ hora: Date.now(), punto: ORIGEN })); } catch { /* nada */ }
   sessionStorage.removeItem("pedalito_paravos");   // las recomendaciones dependen de dónde estás
   plan.tramos = null;                              // un recorrido armado desde otro lado ya no sirve
@@ -54,6 +55,11 @@ function fijarOrigen(punto) {
 const INTERESES = ["Anfiteatro", "Bar", "Biblioteca", "Café", "Centro cultural", "Club de música en vivo",
   "Disquería", "Espacio de formación", "Espacio ferial", "Galería de arte", "Librería",
   "Monumentos y lugares históricos", "Museo", "Restaurante", "Sala de cine", "Sala de teatro"];
+// Cada categoría pertenece a un grupo con su color de la paleta (arte, gastronomía, música y escena, aire libre); ver [data-grupo] en style.css
+const GRUPO_CATEGORIA = { "Museo": "arte", "Galería de arte": "arte", "Centro cultural": "arte", "Biblioteca": "arte", "Librería": "arte", "Espacio de formación": "arte",
+  "Restaurante": "gastro", "Bar": "gastro", "Café": "gastro", "Club de música en vivo": "escena", "Sala de teatro": "escena", "Sala de cine": "escena", "Anfiteatro": "escena",
+  "Disquería": "escena", "Monumentos y lugares históricos": "aire", "Espacio ferial": "aire" };
+const grupoDe = categoria => GRUPO_CATEGORIA[categoria] || "arte";
 const COLORES = ["naranja", "celeste", "verde", "rosa"];       // orden de las tarjetas apiladas de Explorar
 const VELOCIDAD_KMH = 14;                                       // para estimar minutos de viaje
 const lugaresPorTiempo = min => (min <= 45 ? 1 : min <= 90 ? 2 : min <= 150 ? 3 : 4);   // 30 min → 1, 1 h → 2, 2 h → 3; los tiempos propios siguen la misma escala
@@ -88,7 +94,7 @@ const fotoUrl = l => l.img ? `img/${encodeURI(l.img)}` : "";   // encodeURI: la 
 const TABS = ["inicio", "explorar", "planificar", "perfil"];
 const PUBLICAS = ["bienvenida", "cuenta"];
 const MIN_INTERESES = 2;                       // mínimo de intereses para seguir (el máximo es 5)
-let pantallaActual = "";
+let pantallaActual = "", entrandoExplorar = false;
 let finalizado = false;                        // terminó el recorrido ("Finalizar"): en Inicio ya no se puede volver a Compartir
 
 function mostrar() {
@@ -97,7 +103,8 @@ function mostrar() {
   if (!estado.email && !PUBLICAS.includes(pantalla)) pantalla = "bienvenida";
   if (estado.email && estado.intereses.length < MIN_INTERESES && pantalla !== "intereses" && !PUBLICAS.includes(pantalla)) pantalla = "intereses";
   // Con intereses ya elegidos, antes de ofrecer nada se pregunta desde dónde salís (en cada sesión)
-  if (estado.email && estado.intereses.length >= MIN_INTERESES && !origenElegido && !["intereses", "ubicacion", "accesos", ...PUBLICAS].includes(pantalla)) pantalla = "ubicacion";
+  // (el punto de partida ya no se pide antes del Inicio: se elige desde el Inicio con "Elegir")
+  if (pantalla === "explorar" && pantallaActual !== "explorar") entrandoExplorar = true;     // el mapa de Explorar toma la vista del Inicio
   if (pantalla === "explorar" && pantallaActual !== "explorar" && pantallaActual !== "lugar") reiniciarFiltros();
   pantallaActual = pantalla;
   if (pantalla !== "inicio") finalizado = false;
@@ -107,12 +114,14 @@ function mostrar() {
   if (location.hash.slice(1) !== destino) history.replaceState(null, "", `#${destino}`);
 
   $$(".pantalla").forEach(s => s.classList.toggle("visible", s.id === pantalla));
-  const conNav = TABS.includes(pantalla);
+  const conNav = TABS.includes(pantalla) || pantalla === "ubicacion";           // la barra de abajo ya está desde "Elegí tu punto de partida"
   $("#nav").classList.toggle("visible", conNav);
   document.querySelector(".app").classList.toggle("con-nav", conNav);
-  $("#atras").hidden = ["bienvenida", "intereses", "lugar", "actividad", "cierre", "compartir"].includes(pantalla) || (finalizado && pantalla === "inicio");   // en el detalle la flecha va sobre la foto
+  $("#atras").hidden = ["bienvenida", "intereses", "ubicacion", "lugar", "actividad", "cierre", "compartir"].includes(pantalla) || (finalizado && pantalla === "inicio");   // en el detalle la flecha va sobre la foto
   $$("#nav a").forEach(a => a.classList.toggle("activo", a.dataset.tab === pantalla));
-  window.scrollTo(0, 0); pintarCaja();
+  window.scrollTo(0, 0); $(".app-scroll").scrollTop = 0; pintarCaja();
+  const filtro = $("#filtro-mapa");                                    // capas del mapa: solo en las pantallas con mapa de puntos
+  filtro.hidden = !["ubicacion", "inicio", "explorar"].includes(pantalla); filtro.classList.toggle("sin-flecha", pantalla === "ubicacion");
   if (pantalla !== "recorrido") pausarGuia();                          // al salir de la guía se apaga el GPS
 
   ({ intereses: pintarIntereses, ubicacion: pintarUbicacion, inicio: pintarInicio, explorar: pintarExplorar,
@@ -122,7 +131,7 @@ function mostrar() {
 
 // ---------- Flecha para volver ----------
 // Si la persona ya navegó dentro de la app se usa el historial del navegador; si entró directo, va a la pantalla anterior del flujo.
-const PADRE = { cuenta: "bienvenida", intereses: "bienvenida", ubicacion: "intereses", inicio: "ubicacion", explorar: "inicio", lugar: "explorar",
+const PADRE = { cuenta: "bienvenida", intereses: "bienvenida", ubicacion: "inicio", inicio: "intereses", explorar: "inicio", lugar: "explorar",
   planificar: "inicio", recorrido: "planificar", cierre: "recorrido", perfil: "inicio", compartir: "perfil", actividad: "inicio", pasaporte: "perfil", accesos: "ubicacion" };
 let navegaciones = 0, volviendo = false;
 window.addEventListener("hashchange", () => { if (volviendo) volviendo = false; else navegaciones++; mostrar(); });
@@ -171,10 +180,9 @@ $("#ya-tengo").addEventListener("click", e => {
 // ---------- 02 · Intereses ----------
 function pintarIntereses() {
   $("#chips-intereses").innerHTML = INTERESES.map(i =>
-    `<button class="chip ${estado.intereses.includes(i) ? "activo" : ""}" data-interes="${esc(i)}" aria-pressed="${estado.intereses.includes(i)}">${esc(i)}</button>`).join("");
+    `<button class="chip ${estado.intereses.includes(i) ? "activo" : ""}" data-grupo="${grupoDe(i)}" data-interes="${esc(i)}" aria-pressed="${estado.intereses.includes(i)}">${esc(i)}</button>`).join("");
   const n = estado.intereses.length;
   $("#guardar-intereses").disabled = n < MIN_INTERESES || n > 5;
-  $("#guardar-intereses").firstChild.textContent = n ? `Guardar intereses · ${n}` : "Guardar intereses";
 }
 $("#chips-intereses").addEventListener("click", e => {
   const i = e.target.dataset.interes; if (!i) return;
@@ -182,7 +190,7 @@ $("#chips-intereses").addEventListener("click", e => {
   if (sel.includes(i)) sel.splice(sel.indexOf(i), 1); else if (sel.length < 5) sel.push(i);
   pintarIntereses();
 });
-$("#guardar-intereses").addEventListener("click", () => { guardarEstado(); sessionStorage.removeItem("pedalito_paravos"); location.hash = "ubicacion"; });
+$("#guardar-intereses").addEventListener("click", () => { guardarEstado(); sessionStorage.removeItem("pedalito_paravos"); location.hash = "inicio"; });
 
 // ---------- 02b · Desde dónde salís ----------
 let mapaUbi, marcaUbi, seleccion = null, sugerencias = [];
@@ -191,6 +199,14 @@ const sinTildes = t => String(t).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowe
 function estacionMasCercana(p) {
   return ESTACIONES.reduce((mejor, e) => { const m = PRED.distKm(p, e) * 1000; return m < mejor.m ? { e, m } : mejor; }, { e: null, m: Infinity });
 }
+
+/** Cartel de error rojo bajo el buscador: se usa cuando el lugar elegido o escrito queda fuera de la zona cubierta. "" lo oculta. */
+function errorZona(texto) { const el = $("#origen-error"); el.textContent = texto; el.hidden = !texto; }
+// Otros barrios de la Ciudad: si alguien escribe uno, se le explica que todavía no lo cubrimos
+const BARRIOS_FUERA = ["Agronomía", "Almagro", "Balvanera", "Belgrano", "Boedo", "Caballito", "Chacarita", "Coghlan", "Colegiales", "Flores", "Floresta",
+  "Liniers", "Mataderos", "Monte Castro", "Núñez", "Paternal", "Parque Avellaneda", "Parque Chacabuco", "Parque Chas", "Saavedra", "San Cristóbal",
+  "Vélez Sarsfield", "Versalles", "Villa Crespo", "Villa del Parque", "Villa Devoto", "Villa General Mitre", "Villa Lugano", "Villa Luro", "Villa Ortúzar",
+  "Villa Pueyrredón", "Villa Real", "Villa Riachuelo", "Villa Santa Rita", "Villa Soldati", "Once"];
 
 /** Marca el punto de salida elegido y avisa si queda fuera de la zona cubierta (12 barrios: ver js/zona.js). */
 const ZONA = window.PedalitoZona;
@@ -202,13 +218,14 @@ function elegirPunto(p, nombre, redibujar = true) {
   marcaUbi?.setLngLat([p.lon, p.lat]);
   $("#origen-aviso").textContent = dentro
     ? `${barrio ? barrio + " · " : ""}Estación EcoBici más cercana: ${e.nombre}, a ${Math.round(m)} m.`
-    : `Ese punto queda fuera de los barrios que cubrimos (${ZONA.texto}). Elegí otro${ZONA.hay ? " dentro del borde punteado" : ""}.`;
+    : "Tocá el mapa o arrastrá el punto para ajustar.";
+  errorZona(dentro ? "" : `Ese punto queda fuera de los barrios que cubrimos (${ZONA.texto}). Elegí otro${ZONA.hay ? " dentro del borde punteado" : ""}.`);
   $("#confirmar-origen").disabled = !dentro;
   if (redibujar) pintarEstacionesCercanas(p);
 }
 
 function pintarUbicacion() {
-  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true; $("#borrar-origen").hidden = true;
+  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true; $("#borrar-origen").hidden = true; errorZona("");
   $("#confirmar-origen").disabled = true;
   seleccion = null;
   pintarEstacionesCercanas(ORIGEN); pintarFrecuentes();
@@ -222,12 +239,13 @@ function pintarUbicacion() {
     mapaUbi.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaUbicacion.visiblePx()) } });
     mapaUbi.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaUbi.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
-    marcaUbi = new maplibregl.Marker({ color: "#203ae9", draggable: true }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaUbi);
+    marcaUbi = new maplibregl.Marker({ color: "#B5543A", draggable: true }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaUbi);
     marcaUbi.on("dragend", () => { const p = marcaUbi.getLngLat(); elegirPunto({ lat: p.lat, lon: p.lng }); });
     mapaUbi.on("click", e => elegirPunto({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
   } else {
     mapaUbi.resize(); ajustarMapa(mapaUbi, hojaUbicacion, false);
   }
+  pintarEstacionesEn(mapaUbi); pintarLugaresEn(mapaUbi, true); aplicarCapas();   // estaciones y hotspots también acá, con el filtro de capas
   // Si ya había uno elegido en esta sesión, queda preseleccionado para poder cambiarlo
   if (origenElegido) { mapaUbi.jumpTo({ center: [ORIGEN.lon, ORIGEN.lat] }); elegirPunto(ORIGEN, ORIGEN.nombre); }
   else marcaUbi.setLngLat([ORIGEN.lon, ORIGEN.lat]);
@@ -255,15 +273,20 @@ $("#usar-ubicacion").addEventListener("click", () => {
 $("#buscar-origen").addEventListener("input", () => {
   $("#borrar-origen").hidden = !$("#buscar-origen").value;
   const q = sinTildes($("#buscar-origen").value.trim()), lista = $("#sugerencias");
+  errorZona("");
   if (q.length < 2) { lista.hidden = true; return; }
   const estaciones = ESTACIONES.filter(e => sinTildes(e.nombre).includes(q))
     .map(e => ({ nombre: `Estación ${e.nombre}`, detalle: e.barrio, lat: e.lat, lon: e.lon }));
   const lugares = LUGARES.filter(l => sinTildes(l.nombre).includes(q))
     .map(l => ({ nombre: l.nombre, detalle: `${l.categoria} · ${l.barrio}`, lat: l.lat, lon: l.lon }));
   sugerencias = [...estaciones, ...lugares].slice(0, 6);
-  lista.innerHTML = sugerencias.map((s, i) => `<li><button type="button" data-i="${i}">${esc(s.nombre)}<small>${esc(s.detalle)}</small></button></li>`).join("")
-    || `<li><small style="padding:10px 14px">No encontramos ese hotspot.</small></li>`;
-  lista.hidden = false;
+  // Un barrio que no cubrimos (aunque no coincida con ningún hotspot): cartel de error en vez de una lista vacía
+  const fuera = q.length >= 3 && BARRIOS_FUERA.find(b => sinTildes(b).startsWith(q) || q.includes(sinTildes(b)));
+  const hayBarrioDentro = ZONA.barrios.some(b => sinTildes(b).startsWith(q));
+  if (fuera && !hayBarrioDentro) errorZona(`${fuera} queda fuera de los barrios que cubrimos (${ZONA.texto}). Probá con un lugar de esa zona.`);
+  else if (!sugerencias.length) errorZona("No encontramos ese lugar en la zona que cubrimos. Probá con otro hotspot o estación.");
+  lista.innerHTML = sugerencias.map((s, i) => `<li><button type="button" data-i="${i}">${esc(s.nombre)}<small>${esc(s.detalle)}</small></button></li>`).join("");
+  lista.hidden = !sugerencias.length;
 });
 $("#sugerencias").addEventListener("click", e => {
   const b = e.target.closest("button[data-i]"); if (!b) return;
@@ -287,6 +310,14 @@ $("#referencias-boton").addEventListener("click", () => {
   boton.setAttribute("aria-label", ocultar ? "Mostrar las referencias del mapa" : "Ocultar las referencias del mapa");
 });
 
+// Referencias del mapa del Inicio: cerradas al entrar (es mucha información); el "+" las muestra y el "−" las oculta
+$("#ref-inicio-boton").addEventListener("click", () => {
+  const cuerpo = $("#ref-inicio-cuerpo"), boton = $("#ref-inicio-boton"), abrir = cuerpo.hidden;
+  cuerpo.hidden = !abrir;
+  boton.textContent = abrir ? "−" : "+";
+  boton.setAttribute("aria-expanded", String(abrir));
+  boton.setAttribute("aria-label", abrir ? "Ocultar las referencias del mapa" : "Mostrar las referencias del mapa");
+});
 // ---------- Estaciones cercanas al punto de partida (con la disponibilidad de ahora, o estimada) ----------
 const ICONOS = {
   casa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>',
@@ -304,7 +335,7 @@ function pintarEstacionesCercanas(p) {
   $("#estaciones-cercanas").innerHTML = cerca.map(({ e, m }) => {
     const v = DISP.de(e.numero);
     const detalle = v
-      ? `<span class="${v.bicis ? "ok" : "sin"}">● ${plural(v.bicis, "bici libre", "bicis libres")}</span> · ${plural(v.anclajes, "anclaje", "anclajes")}`
+      ? `<span class="${v.bicis ? "ok" : "sin"}">● ${plural(v.bicis, "bici", "bicis")}</span> · ${plural(v.anclajes, "anclaje libre", "anclajes libres")}`
       : `<span>Bicis: ${esc(PRED.predecirEstacion(e.numero, new Date(), 0).nivelBicis)} (estimado)</span>`;
     return `<li><label class="estacion-op"><span class="icono-circulo">${ICONOS.bici}</span>
       <span class="cuerpo"><strong>${esc(e.nombre)}</strong><small>${detalle} · a ${Math.round(m)} m</small></span>
@@ -317,7 +348,7 @@ $("#estaciones-cercanas").addEventListener("change", e => {
   mapaUbi?.flyTo({ center: [est.lon, est.lat], zoom: 15.5 });
 });
 $("#borrar-origen").addEventListener("click", () => {
-  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true; $("#borrar-origen").hidden = true; $("#buscar-origen").focus();
+  $("#buscar-origen").value = ""; $("#sugerencias").hidden = true; $("#borrar-origen").hidden = true; errorZona(""); $("#buscar-origen").focus();
 });
 
 // ---------- Lugares frecuentes (Casa, Trabajo…): se guardan en este navegador y se eligen con un toque ----------
@@ -403,31 +434,42 @@ function pintarInicio() {
   const h = new Date().getHours();
   const saludo = h < 13 ? "Buen día" : h < 20 ? "Buenas tardes" : "Buenas noches";
   $("#saludo").textContent = `¡${saludo}${estado.nombre ? " " + estado.nombre : ""}!`;
-  $("#origen-nombre").textContent = ORIGEN.nombre;
+  $("#origen-nombre").textContent = origenElegido ? ORIGEN.nombre : "Elegí desde dónde salís";
+  $(".origen-cambiar").firstChild.textContent = origenElegido ? "Cambiar " : "Elegir ";
   pintarMapaHome(); pintarFechas(); pintarTendencias(); pintarParaVos();
 }
 
 // ---------- Panel blanco deslizable (Home y Explorar) ----------
 // Dos posiciones: abierto y cerrado (se ve más mapa). Se cambia deslizando hacia abajo/arriba con el dedo, con la
 // rueda del mouse, o tocando la barrita de arriba. data-abierta / data-cerrada = % de la pantalla que ocupa el panel.
+/** Alto de la pantalla de la app: en computadora es el del marco de celular, no el de la ventana. */
+const altoPantalla = () => document.querySelector(".app").clientHeight || window.innerHeight;
 function hacerDeslizable(hoja, alCambiar) {
   const scroll = hoja.querySelector(".hoja-scroll"), agarre = hoja.querySelector(".agarre");
   const abierta = Number(hoja.dataset.abierta), cerrada = Number(hoja.dataset.cerrada);
   hoja.style.setProperty("--abierta", abierta); hoja.style.setProperty("--cerrada", cerrada);
+  const maxima = Number(hoja.dataset.maxima) || 0;                                          // tercer estado: expandida hasta 3/4 de la pantalla
+  hoja.style.setProperty("--maxima", maxima);
+  const estaExpandida = () => hoja.classList.contains("expandida");
+  const expandir = e => { if (!maxima) return; hoja.classList.toggle("expandida", e); alCambiar?.(estaCerrada()); };
   const estaCerrada = () => hoja.classList.contains("cerrada");
-  const pxCierre = () => (abierta - cerrada) / 100 * window.innerHeight;
+  const pxCierre = () => (abierta - cerrada) / 100 * altoPantalla();
   const poner = c => {
-    hoja.classList.toggle("cerrada", c); hoja.style.transform = ""; hoja.style.transition = "";
+    hoja.classList.toggle("cerrada", c); hoja.classList.remove("expandida"); hoja.style.transform = ""; hoja.style.transition = "";
     if (c) scroll.scrollTop = 0;
     alCambiar?.(c);
   };
   agarre.addEventListener("click", () => poner(!estaCerrada()));
 
-  let y0 = null, dy = 0, arrastrando = false, empezoArriba = false;
+  let y0 = null, dy = 0, arrastrando = false, empezoArriba = false, modo = null;
   hoja.addEventListener("touchstart", e => { y0 = e.touches[0].clientY; dy = 0; arrastrando = false; empezoArriba = scroll.scrollTop <= 0; }, { passive: true });
   hoja.addEventListener("touchmove", e => {
     if (y0 === null) return;
     dy = e.touches[0].clientY - y0;
+    if (maxima && !estaCerrada() && !(arrastrando && !modo)) {                              // panel abierto: tirar hacia arriba lo expande hasta 3/4; hacia abajo desde el tope lo vuelve a la mitad
+      if (!estaExpandida() && dy < -25) { modo = "subir"; arrastrando = true; e.preventDefault(); return; }
+      if (estaExpandida() && dy > 0 && (empezoArriba || agarre.contains(e.target))) { modo = "bajar"; arrastrando = true; e.preventDefault(); return; }
+    }
     const baja = !estaCerrada() && dy > 0 && (empezoArriba || agarre.contains(e.target));   // tirar hacia abajo desde el tope
     const sube = estaCerrada() && dy < 0;                                                    // tirar hacia arriba para abrir
     if (!arrastrando && !(baja || sube)) return;                                             // si no, es scroll normal del contenido
@@ -436,19 +478,22 @@ function hacerDeslizable(hoja, alCambiar) {
     hoja.style.transition = "none"; hoja.style.transform = `translateY(${px}px)`;
   }, { passive: false });
   const soltar = () => {
-    if (arrastrando) { const c = estaCerrada(); poner(!c && dy > 70 ? true : c && dy < -70 ? false : c); }
-    y0 = null; arrastrando = false;
+    if (modo) { if (modo === "subir" && dy < -40) expandir(true); else if (modo === "bajar" && dy > 40) expandir(false); }
+    else if (arrastrando) { const c = estaCerrada(); poner(!c && dy > 70 ? true : c && dy < -70 ? false : c); }
+    y0 = null; arrastrando = false; modo = null;
   };
   hoja.addEventListener("touchend", soltar); hoja.addEventListener("touchcancel", soltar);
 
   let ultimo = 0;                                                                            // rueda del mouse
   hoja.addEventListener("wheel", e => {
     const ahora = Date.now(); if (ahora - ultimo < 450) return;
-    if (!estaCerrada() && e.deltaY < -20 && scroll.scrollTop <= 0) { ultimo = ahora; poner(true); }
+    if (maxima && !estaCerrada() && !estaExpandida() && e.deltaY > 20) { ultimo = ahora; expandir(true); }
+    else if (maxima && estaExpandida() && e.deltaY < -20 && scroll.scrollTop <= 0) { ultimo = ahora; expandir(false); }
+    else if (!estaCerrada() && !estaExpandida() && e.deltaY < -20 && scroll.scrollTop <= 0) { ultimo = ahora; poner(true); }
     else if (estaCerrada() && e.deltaY > 20) { ultimo = ahora; poner(false); }
   }, { passive: true });
 
-  return { poner, estaCerrada, visiblePx: () => (estaCerrada() ? cerrada : abierta) / 100 * window.innerHeight };
+  return { poner, estaCerrada, expandir, estaExpandida, visiblePx: () => (estaExpandida() ? maxima : estaCerrada() ? cerrada : abierta) / 100 * altoPantalla() };
 }
 /** Corre el centro del mapa para que lo importante quede en la parte que no tapa el panel. */
 function ajustarMapa(mapa, hoja, animar = true) {
@@ -465,10 +510,10 @@ function aviso(texto) {
 // ---------- Botón "+" de las tarjetas: suma o quita el lugar de tu recorrido ----------
 const MAX_DESTINOS = 5;
 const botonMas = id => { const sumado = estado.destinos.includes(id);
-  return `<button class="mas" type="button" data-id="${id}" aria-pressed="${sumado}" aria-label="${sumado ? "Quitar del recorrido" : "Sumar al recorrido"}">${sumado ? "✓" : "+"}</button>`; };
+  return `<button class="mas" type="button" data-id="${id}" aria-pressed="${sumado}" aria-label="${sumado ? "Quitar del recorrido" : "Sumar al recorrido"}">${sumado ? "−" : "+"}</button>`; };
 /** Botón de texto para sumar el hotspot al recorrido (tarjetas de Explorar). Hace lo mismo que el "+": suma o quita. */
 const botonAgregar = id => { const sumado = estado.destinos.includes(id);
-  return `<button class="agregar-rec" type="button" data-id="${id}" aria-pressed="${sumado}">${sumado ? "En tu recorrido ✓" : "Agregar al recorrido"}</button>`; };
+  return `<button class="agregar-rec" type="button" data-id="${id}" aria-pressed="${sumado}">${sumado ? "En tu recorrido" : "Agregar al recorrido"}</button>`; };
 document.addEventListener("click", e => {
   const b = e.target.closest(".mas, .agregar-rec"); if (!b) return;
   const id = Number(b.dataset.id), i = estado.destinos.indexOf(id), l = porId(id);
@@ -476,8 +521,8 @@ document.addEventListener("click", e => {
   else if (estado.destinos.length >= MAX_DESTINOS) { aviso(`Podés sumar hasta ${MAX_DESTINOS} hotspots.`); return; }
   else { estado.destinos.push(id); plan.modo = "destino"; aviso(`${l.nombre} sumado (${estado.destinos.length}). Mirá tu ruta en Pedalear.`); }
   plan.tramos = null; guardarEstado(); pintarCaja();
-  $$(`.mas[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "✓" : "+"; });
-  $$(`.agregar-rec[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "En tu recorrido ✓" : "Agregar al recorrido"; });
+  $$(`.mas[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "−" : "+"; });
+  $$(`.agregar-rec[data-id="${id}"]`).forEach(x => { const s = estado.destinos.includes(id); x.setAttribute("aria-pressed", s); x.textContent = s ? "En tu recorrido" : "Agregar al recorrido"; });
 });
 
 /** Tarjeta de los carruseles del Home. `lugar` puede faltar (actividad sin lugar en el dataset): entonces no hay link ni "+". */
@@ -487,7 +532,7 @@ function tarjetaLugarHTML({ lugar, etiqueta, titulo, metas, textoSinImagen, enla
       <span class="tag">${esc(etiqueta)}</span>${lugar?.img ? "" : esc(textoSinImagen || "")}
     </div>
     <div class="info"><strong>${esc(titulo)}</strong>${metas.map(m => `<span class="meta">${esc(m)}</span>`).join("")}</div>`;
-  return `<div class="tarjeta-lugar">${lugar ? `<a class="enlace" href="${enlace || `#lugar/${lugar.id}`}">${contenido}</a>${botonMas(lugar.id)}` : `<div class="enlace">${contenido}</div>`}</div>`;
+  return `<div class="tarjeta-lugar"${lugar ? ` data-grupo="${grupoDe(lugar.categoria)}"` : ""}>${lugar ? `<a class="enlace" href="${enlace || `#lugar/${lugar.id}`}">${contenido}</a>${botonMas(lugar.id)}` : `<div class="enlace">${contenido}</div>`}</div>`;
 }
 
 // ---------- Ficha: qué vas a ver, quiénes, desde cuándo, dato curioso y enlace (actividades y lugares) ----------
@@ -551,7 +596,7 @@ function pintarActividad(id) {
 // ---------- 13 · Pasaporte cultural ----------
 // Un sello por cada lugar visitado, en la página de su barrio. Los hotspots que faltan aparecen como huecos para descubrir.
 // El dibujo de cada sello se carga en img/sellos/<id>.png y se avisa en data/sellos.js; mientras tanto se usa la forma base.
-const TINTAS = ["#203ae9", "#f90083", "#f76c09", "#00baf1"];
+const TINTAS = ["#8E6BBF", "#C8102E", "#F2B705", "#2F6B4F", "#7FB2C9"];   // las de la paleta, una por categoría
 const iniciales = nombre => nombre.replace(/\([^)]*\)/g, "").split(/\s+/).filter(w => w && !/^(de|del|la|el|los|las|y|en)$/i.test(w)).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 function selloHTML(l, visitado, extra = "") {
   const f = visitado && estado.sellos?.[l.id] ? new Date(estado.sellos[l.id]).toLocaleDateString("es-AR", { day: "numeric", month: "short" }) : "";
@@ -583,8 +628,7 @@ function pintarPasaporte() {
 // de js/prediccion.js, y el panel lo aclara.
 let marcaHome;
 const DISP = window.PedalitoDisponibilidad;
-const COLOR_NIVEL = { alta: "#ffd400", media: "#f76c09", baja: "#e5202e" };    // colores de la ESTIMACIÓN (sin datos en vivo)
-const pinesEstaciones = new Map();                                              // número de estación → { marker, el }
+const COLOR_NIVEL = { alta: "var(--n-alta)", media: "var(--n-media)", baja: "var(--n-baja)" };    // colores de la ESTIMACIÓN (sin datos en vivo)
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
 /** Texto corto de disponibilidad de una estación: real ("7 bicis ahora") o estimado ("bicis: media (estimado)"). */
@@ -615,7 +659,7 @@ function pintarPin(el, numero, clave, sinDatos = "") {
 /** Sin datos en vivo: pinta el círculo con el color de la estimación (rojo bajo, naranja medio, amarillo alto). */
 function pintarEstimado(el, est, clave) {
   const p = PRED.predecirEstacion(est.numero, new Date(), 0), nv = clave === "bicis" ? p.nivelBicis : p.nivelAnclajes;
-  el.style.background = COLOR_NIVEL[nv]; el.classList.toggle("claro", nv === "alta");
+  el.style.background = COLOR_NIVEL[nv]; el.classList.toggle("claro", nv === "media");
 }
 
 function popupEstacion(e) {
@@ -628,19 +672,22 @@ function popupEstacion(e) {
   return `<strong>${esc(e.nombre)}</strong><br>Bicis: ${esc(p.nivelBicis)} · estimado<br><small>Sin datos en vivo</small>`;
 }
 
-/** Crea o actualiza los círculos de las 110 estaciones sobre el mapa del Home. */
-function pintarEstacionesHome() {
-  if (!mapaHome || !window.maplibregl) return;
+/** Crea o actualiza los círculos de las 110 estaciones sobre un mapa (Ubicación, Inicio o Explorar). Cada mapa lleva sus propios pines. */
+const pinesPorMapa = new Map();                                       // mapa → (número de estación → { marker, el })
+function pintarEstacionesEn(mapa) {
+  if (!mapa || !window.maplibregl) return;
+  if (!pinesPorMapa.has(mapa)) pinesPorMapa.set(mapa, new Map());
+  const pines = pinesPorMapa.get(mapa);
   ESTACIONES.forEach(e => {
-    let pin = pinesEstaciones.get(e.numero);
+    let pin = pines.get(e.numero);
     if (!pin) {
       const el = document.createElement("button"); el.type = "button";
-      const marker = new maplibregl.Marker({ element: el }).setLngLat([e.lon, e.lat]).addTo(mapaHome);
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([e.lon, e.lat]).addTo(mapa);
       el.addEventListener("click", ev => {
         ev.stopPropagation();
-        new maplibregl.Popup({ offset: 18 }).setLngLat([e.lon, e.lat]).setHTML(popupEstacion(e)).addTo(mapaHome);
+        new maplibregl.Popup({ offset: 18 }).setLngLat([e.lon, e.lat]).setHTML(popupEstacion(e)).addTo(mapa);
       });
-      pin = { marker, el }; pinesEstaciones.set(e.numero, pin);
+      pin = { marker, el }; pines.set(e.numero, pin);
     }
     if (!pintarPin(pin.el, e.numero, "bicis")) {                      // estimación: color según la probabilidad de bicis
       const p = PRED.predecirEstacion(e.numero, new Date(), 0);
@@ -648,31 +695,63 @@ function pintarEstacionesHome() {
       pin.el.setAttribute("aria-label", `${e.nombre}: bicis ${p.nivelBicis} (estimado)`);
     }
   });
+}
+/** Estaciones en todos los mapas que ya existen + la nota de abajo del saludo del Home. */
+function pintarEstacionesHome() {
+  [mapaUbi, mapaHome, mapaExp].forEach(pintarEstacionesEn);
   const nota = $("#nota-bicis");
   nota.textContent = DISP.estado.enVivo
     ? `El número es la cantidad de bicis disponibles ahora (actualizado ${DISP.hora(DISP.estado.actualizado)}). El color, cuánto de la estación está ocupado. Tocá una estación para ver el detalle.`
     : "Sin datos en vivo por ahora: los colores son una estimación según el día y la hora. Tocá una estación para ver el detalle.";
 }
 
-/** Lugares (hotspots) de tus intereses a 5 km o menos, como cuadrados rosas sobre el mapa de Inicio. */
-let marcasLugares = [];
-function pintarLugaresHome() {
-  if (!mapaHome || !window.maplibregl) return;
-  marcasLugares.forEach(m => m.remove()); marcasLugares = [];
+/** Lugares (hotspots) de tus intereses a 5 km o menos, como círculos rosas sobre el mapa. En "Elegí tu punto de partida" el popup ofrece salir desde ahí. */
+const marcasLugares = new Map();                                      // mapa → marcadores
+function pintarLugaresEn(mapa, paraSalir = false) {
+  if (!mapa || !window.maplibregl) return;
+  (marcasLugares.get(mapa) || []).forEach(m => m.remove());
+  const marcas = [];
   LUGARES.filter(l => estado.intereses.includes(l.categoria) && desdeOrigen(l) <= 5).sort((a, b) => desdeOrigen(a) - desdeOrigen(b)).slice(0, 120).forEach(l => {
-    const el = document.createElement("button"); el.type = "button"; el.className = "lugar-pin"; el.setAttribute("aria-label", l.nombre);
+    const el = document.createElement("button"); el.type = "button"; el.className = "lugar-pin"; el.dataset.grupo = grupoDe(l.categoria); el.setAttribute("aria-label", l.nombre);
     el.addEventListener("click", ev => {
       ev.stopPropagation();
-      new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br><a href="#lugar/${l.id}">Ver hotspot</a>`).addTo(mapaHome);
+      const accion = paraSalir ? `<button type="button" class="popup-salir">Salir desde acá</button>` : `<a href="#lugar/${l.id}">Ver hotspot</a>`;
+      const popup = new maplibregl.Popup({ offset: 14 }).setLngLat([l.lon, l.lat]).setHTML(`<strong>${esc(l.nombre)}</strong><br>${esc(l.categoria)}<br>${accion}`).addTo(mapa);
+      popup.getElement().querySelector(".popup-salir")?.addEventListener("click", () => { popup.remove(); elegirPunto({ lat: l.lat, lon: l.lon }, l.nombre); });
     });
-    marcasLugares.push(new maplibregl.Marker({ element: el }).setLngLat([l.lon, l.lat]).addTo(mapaHome));
+    marcas.push(new maplibregl.Marker({ element: el }).setLngLat([l.lon, l.lat]).addTo(mapa));
   });
+  marcasLugares.set(mapa, marcas);
 }
+const pintarLugaresHome = () => pintarLugaresEn(mapaHome);
+
+// ---------- Vista compartida: Inicio y Explorar muestran el mismo mapa (misma zona y zoom), así que al pasar de uno al otro no cambia ----------
+let vistaMapa = null;                                                 // { de: "home" | "exp", center, zoom }
+function recordarVista(mapa, de) { mapa.on("moveend", () => { const c = mapa.getCenter(); vistaMapa = { de, center: [c.lng, c.lat], zoom: mapa.getZoom() }; }); }
+/** Pone en `mapa` la vista del otro mapa (o el punto de partida si nadie la movió todavía). */
+function aplicarVista(mapa, de, hoja) {
+  if (vistaMapa?.de === de) return;                                   // este mapa ya tiene la última vista
+  const v = vistaMapa || { center: [ORIGEN.lon, ORIGEN.lat], zoom: 14.5 };
+  mapa.jumpTo({ center: v.center, zoom: v.zoom, padding: { top: 0, left: 0, right: 0, bottom: Math.round(hoja.visiblePx()) } });
+}
+
+// ---------- Capas del mapa: Estaciones EcoBici y Hotspots (arrancan activas; sin ninguna el mapa queda limpio) ----------
+const capas = { estaciones: true, hotspots: true };
+function aplicarCapas() {
+  const app = $(".app");
+  app.classList.toggle("sin-estaciones", !capas.estaciones);          // los pines son marcadores HTML: el CSS los oculta en estos tres mapas
+  app.classList.toggle("sin-hotspots", !capas.hotspots);
+  $$("#filtro-mapa .capa").forEach(b => b.setAttribute("aria-pressed", String(capas[b.dataset.capa])));
+}
+$("#filtro-mapa").addEventListener("click", e => {
+  const b = e.target.closest(".capa"); if (!b) return;
+  capas[b.dataset.capa] = !capas[b.dataset.capa]; aplicarCapas();
+});
 
 function pintarMapaHome() {
   if (!window.maplibregl) return;
   if (mapaHome) {                                   // volvió a Home: recentrar en el punto de salida y refrescar estaciones
-    mapaHome.resize(); mapaHome.jumpTo({ center: [ORIGEN.lon, ORIGEN.lat], zoom: 14.5, padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaInicio.visiblePx()) } });
+    mapaHome.resize(); aplicarVista(mapaHome, "home", hojaInicio);
     marcaHome.setLngLat([ORIGEN.lon, ORIGEN.lat]);
     pintarEstacionesHome(); pintarLugaresHome();
     return;
@@ -682,10 +761,11 @@ function pintarMapaHome() {
   ZONA.dibujar(mapaHome);
   UBI.dibujar(mapaHome);
   mapaHome.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaInicio.visiblePx()) } });
+  recordarVista(mapaHome, "home");
   mapaHome.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   mapaHome.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
   const punto = document.createElement("div");
-  punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#203ae9;border:3px solid #fff;box-shadow:0 0 0 10px rgba(32,58,233,.25)";
+  punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #3A3A3C";
   marcaHome = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaHome);
   pintarEstacionesHome(); pintarLugaresHome();
 }
@@ -693,16 +773,23 @@ const hojaInicio = hacerDeslizable($("#hoja-inicio"), () => ajustarMapa(mapaHome
 
 // Clima actual (OpenWeather)
 let clima = null;
+/** Caja del clima, arriba a la derecha del saludo del Home: ícono, temperatura y descripción corta. */
+function pintarClima(datos) {
+  const icono = $("#clima-icono");
+  $("#clima-temp").textContent = datos ? `${Math.round(datos.temp)} °C` : "– °C";
+  $("#clima-desc").textContent = datos ? `${datos.descripcion.charAt(0).toUpperCase()}${datos.descripcion.slice(1)}${datos.lluvia ? ` · ${datos.lluvia} mm` : ""}` : "Sin datos";
+  icono.hidden = !datos?.icono;
+  if (datos?.icono) icono.src = `https://openweathermap.org/img/wn/${datos.icono}@2x.png`;
+}
 async function cargarClima() {
-  const el = $("#clima");
-  if (!ENV.OPENWEATHER_API_KEY) { el.textContent = "Clima no disponible"; return; }
+  if (!ENV.OPENWEATHER_API_KEY) { clima = null; pintarClima(null); return; }
   try {
     const r = await fetch(`${ENV.OPENWEATHER_URL}?lat=${ORIGEN.lat}&lon=${ORIGEN.lon}&units=metric&lang=es&appid=${ENV.OPENWEATHER_API_KEY}`);
     if (!r.ok) throw new Error(r.status);
     const d = await r.json();
-    clima = { temp: d.main.temp, descripcion: d.weather[0].description, lluvia: d.rain?.["1h"] || 0, viento: d.wind.speed * 3.6 };
-    el.textContent = `${Math.round(clima.temp)} °C · ${clima.descripcion}${clima.lluvia ? ` · lluvia ${clima.lluvia} mm` : ""}`;
-  } catch { el.textContent = "Clima no disponible"; }
+    clima = { temp: d.main.temp, descripcion: d.weather[0].description, icono: d.weather[0].icon, lluvia: d.rain?.["1h"] || 0, viento: d.wind.speed * 3.6 };
+    pintarClima(clima);
+  } catch { pintarClima(null); }
 }
 const climaTexto = () => clima ? `${Math.round(clima.temp)} °C, ${clima.descripcion}, lluvia ${clima.lluvia} mm, viento ${Math.round(clima.viento)} km/h` : "sin dato";
 cargarClima();
@@ -769,9 +856,9 @@ async function pintarTendencias() {
 }
 
 // ---------- 04 · Explorar ----------
-const COLOR_TARJETA = { naranja: "#f76c09", celeste: "#00baf1", verde: "#38ea59", rosa: "#f90083" };
+const COLOR_TARJETA = { naranja: "#B5543A", celeste: "#7FB2C9", verde: "#2F6B4F", rosa: "#8E6BBF" };
 const ZONA_FOCO = 90;             // px de scroll en los que una tarjeta pasa de tamaño normal a agrandada (= lo que se asoma de cada tarjeta apilada)
-let mapaExp, marcaExp, geoPendiente;
+let mapaExp, marcaExp;
 // Los tres filtros son interruptores independientes: se pueden combinar o apagar todos (entonces se ve todo, del más cerca al más lejos)
 const filtros = { cerca: false, intereses: false, verificado: false };
 /** Cada vez que se entra a Explorar (salvo al volver del detalle de un lugar) los tres filtros y el buscador arrancan apagados. */
@@ -788,7 +875,7 @@ function pintarExplorar({ masLugares = false } = {}) {
   const mostrados = lista.slice(0, limite);
   $("#cantidad").textContent = lista.length > mostrados.length ? `Mostrando ${mostrados.length} de ${lista.length} hotspots` : `${lista.length} hotspots`;
   $("#lista-lugares").innerHTML = mostrados.map((l, i) => `
-    <div class="tarjeta-apilada con-acciones ${COLORES[i % COLORES.length]}">
+    <div class="tarjeta-apilada con-acciones ${COLORES[i % COLORES.length]}" data-grupo="${grupoDe(l.categoria)}"${l.img ? ` style="--img:url('${fotoUrl(l)}')"` : ""}>
       <a class="enlace-card" href="#lugar/${l.id}">
         <strong>${esc(l.nombre)}</strong>
         <span>${esc(l.categoria)} · ${fmtKm(desdeOrigen(l))} · ${esc(l.barrio)}</span>
@@ -802,7 +889,7 @@ function pintarExplorar({ masLugares = false } = {}) {
   $("#ver-mas").textContent = `Ver más hotspots (${Math.min(MAX_LISTA, lista.length - mostrados.length)} más)`;
   $$("#filtros .chip").forEach(c => { c.classList.toggle("activo", filtros[c.dataset.filtro]); c.setAttribute("aria-pressed", filtros[c.dataset.filtro]); });
   medirFoco();
-  pintarMapaExplorar(mostrados, !masLugares);   // con "Ver más" el mapa no se vuelve a encuadrar
+  pintarMapaExplorar();                         // mismo mapa que el Inicio: no depende de la lista
 }
 const reiniciarLista = () => { limite = MAX_LISTA; $("#hoja-explorar .hoja-scroll").scrollTop = 0; pintarExplorar(); };
 $("#buscador").addEventListener("input", reiniciarLista);
@@ -833,40 +920,30 @@ $("#hoja-explorar .hoja-scroll").addEventListener("scroll", () => {
 }, { passive: true });
 
 // Mapa de fondo de Explorar: tu punto de salida y los lugares de la lista, con el color de su tarjeta
-function pintarMapaExplorar(lista, reencuadrar = true) {
+function pintarMapaExplorar() {
   if (!window.maplibregl) return;
-  const geo = { type: "FeatureCollection", features: lista.map((l, i) => ({ type: "Feature",
-    geometry: { type: "Point", coordinates: [l.lon, l.lat] },
-    properties: { id: l.id, nombre: l.nombre, color: COLOR_TARJETA[COLORES[i % COLORES.length]] } })) };
   if (!mapaExp) {
-    geoPendiente = geo;
-    mapaExp = new maplibregl.Map({ container: "mapa-explorar", style: ENV.OPENFREEMAP_STYLE_URL, center: [ORIGEN.lon, ORIGEN.lat], zoom: 14, attributionControl: false });
+    const v = vistaMapa || { center: [ORIGEN.lon, ORIGEN.lat], zoom: 14.5 };
+    mapaExp = new maplibregl.Map({ container: "mapa-explorar", style: ENV.OPENFREEMAP_STYLE_URL, center: v.center, zoom: v.zoom, attributionControl: false });
+    entrandoExplorar = false;
     ZONA.dibujar(mapaExp);
     UBI.dibujar(mapaExp);
     mapaExp.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaExp.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
     const punto = document.createElement("div");
-    punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#203ae9;border:3px solid #fff;box-shadow:0 0 0 10px rgba(32,58,233,.25)";
+    punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #3A3A3C";
     marcaExp = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaExp);
-    mapaExp.once("style.load", () => {
-      mapaExp.addSource("lugares", { type: "geojson", data: geoPendiente });
-      mapaExp.addLayer({ id: "lugares", type: "circle", source: "lugares", paint: {
-        "circle-radius": 9, "circle-stroke-width": 2.5, "circle-stroke-color": "#ffffff", "circle-color": ["get", "color"] } });
-    });
-    mapaExp.on("click", "lugares", e => {
-      const f = e.features[0].properties;
-      new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat).setHTML(`<strong>${esc(f.nombre)}</strong><br><a href="#lugar/${f.id}">Ver hotspot</a>`).addTo(mapaExp);
-    });
-  } else {
-    geoPendiente = geo; mapaExp.resize();
+    mapaExp.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaExplorar.visiblePx()) } });
+    recordarVista(mapaExp, "exp");
+    pintarLugaresEn(mapaExp); pintarEstacionesEn(mapaExp);           // los mismos pines que el Inicio
+  } else if (entrandoExplorar) {                                       // recién entra a Explorar: misma vista que tenía el Inicio
+    entrandoExplorar = false;
+    mapaExp.resize();
     marcaExp.setLngLat([ORIGEN.lon, ORIGEN.lat]);
-    mapaExp.getSource("lugares")?.setData(geo);
+    aplicarVista(mapaExp, "exp", hojaExplorar);
+    pintarLugaresEn(mapaExp); pintarEstacionesEn(mapaExp);
   }
-  // Encuadre: tu punto y los lugares, en la parte del mapa que no tapa el panel
-  if (!reencuadrar) return;
-  const puntos = [ORIGEN, ...lista], lons = puntos.map(p => p.lon), lats = puntos.map(p => p.lat);
-  mapaExp.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
-    { padding: { top: 70, left: 30, right: 30, bottom: Math.round(hojaExplorar.visiblePx()) + 20 }, maxZoom: 15.5, duration: 400 });
+  aplicarCapas();
 }
 const hojaExplorar = hacerDeslizable($("#hoja-explorar"), () => {
   if (mapaExp) mapaExp.easeTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaExplorar.visiblePx()) }, duration: 300 });
@@ -907,7 +984,7 @@ function pintarLugar(id) {
   if (!l) { location.hash = "explorar"; return; }
   const hero = $("#detalle-hero");
   hero.style.backgroundImage = l.img ? `url("${fotoUrl(l)}")` : "";
-  $("#detalle-categoria").textContent = l.categoria;
+  $("#detalle-categoria").textContent = l.categoria; $("#detalle-categoria").dataset.grupo = grupoDe(l.categoria);
   $("#detalle-nombre").textContent = l.nombre;
   $("#detalle-meta").textContent = `${fmtKm(desdeOrigen(l))} · ${l.barrio}`;
   $("#detalle-desc").textContent = `${l.direccion}. Estación EcoBici más cercana a ${l.dist_m} m.`;
@@ -955,7 +1032,8 @@ const KG_CO2_POR_KM_AUTO = 0.12;     // estimación: un auto promedio emite unos
 
 function pintarMiRuta() {
   const hay = estado.destinos.length > 0;
-  $("#miruta-vacia").hidden = hay; $("#miruta-contenido").hidden = !hay;
+  $("#miruta-vacia").hidden = hay; $("#miruta-contenido").hidden = !hay; $("#botones-ruta").hidden = !hay;
+  if (!hay) { $("#chip-ciclo").hidden = true; $("#chip-bicis").hidden = true; }
   $("#miruta-sub").textContent = `Pedaleo cultural personalizado por ${ZONA.barrioDe(ORIGEN) || ORIGEN.nombre}`;
   if (!hay) { editandoParadas = false; return; }
   plan.modo = "destino";
@@ -1006,7 +1084,7 @@ function dibujarMiRuta() {
   $("#impacto-co2").textContent = `${(d.mBici / 1000 * KG_CO2_POR_KM_AUTO).toFixed(1).replace(".", ",")} kg`;
   $("#impacto-ciclo").textContent = d.pctCiclo == null ? "–" : `${d.pctCiclo}%`;
   $("#chip-ciclo").hidden = d.pctCiclo == null; $("#chip-ciclo").textContent = `${d.pctCiclo}% por ciclovía`;
-  $("#chip-bicis").textContent = DISP.estado.enVivo ? "EcoBici en vivo" : "EcoBici estimada";
+  $("#chip-bicis").hidden = false; $("#chip-bicis").textContent = DISP.estado.enVivo ? "EcoBici en vivo" : "EcoBici estimada";
 
   // Itinerario: punto de partida (con la estación donde retirás la bici) y cada parada
   const retiro = plan.tramos.find(t => t.modo === "bici")?.retiro;
@@ -1032,26 +1110,30 @@ function pintarEdicionParadas() {
   $("#miruta-sumar-mas").hidden = !editandoParadas || estado.destinos.length >= MAX_DESTINOS;
 }
 
+// El mapa va de fondo y la caja con la información lo tapa desde abajo: la ruta se encuadra en la parte que queda libre
+let limitesRuta = null;
+const padRuta = () => ({ top: 80, left: 30, right: 30, bottom: Math.round(hojaPlanificar.visiblePx()) + 30 });
+const hojaPlanificar = hacerDeslizable($("#hoja-planificar"), () => { if (mapaMiRuta && limitesRuta) mapaMiRuta.fitBounds(limitesRuta, { padding: padRuta(), maxZoom: 16, duration: 300 }); });
 function pintarMapaMiRuta(d) {
   if (!window.maplibregl) return;
   if (mapaMiRuta) { mapaMiRuta.remove(); mapaMiRuta = null; }
   const puntos = [ORIGEN, ...plan.ids.map(porId), ...d.validos.flatMap(t => d.elegida(t).coords.map(c => ({ lon: c[0], lat: c[1] })))];
   const lons = puntos.map(p => p.lon), lats = puntos.map(p => p.lat);
-  const limites = [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
+  const limites = limitesRuta = [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
   mapaMiRuta = new maplibregl.Map({ container: "mapa-miruta", style: ENV.OPENFREEMAP_STYLE_URL, attributionControl: false, interactive: false,
-    bounds: limites, fitBoundsOptions: { padding: 38, maxZoom: 16 } });
+    bounds: limites, fitBoundsOptions: { padding: padRuta(), maxZoom: 16 } });
   const m = mapaMiRuta;
-  requestAnimationFrame(() => { m.resize(); m.fitBounds(limites, { padding: 38, maxZoom: 16, duration: 0 }); });   // ya con el tamaño final del contenedor
+  requestAnimationFrame(() => { m.resize(); m.fitBounds(limites, { padding: padRuta(), maxZoom: 16, duration: 0 }); });   // ya con el tamaño final del contenedor
   m.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
   const linea = modo => ({ type: "FeatureCollection", features: d.validos.filter(t => t.modo === modo).map(t =>
     ({ type: "Feature", geometry: { type: "LineString", coordinates: d.elegida(t).coords }, properties: {} })) });
   m.once("style.load", () => {
     m.addSource("pie", { type: "geojson", data: linea("pie") });
-    m.addLayer({ id: "pie", type: "line", source: "pie", paint: { "line-color": "#0b192c", "line-width": 4, "line-dasharray": [1.2, 1.6] } });
+    m.addLayer({ id: "pie", type: "line", source: "pie", paint: { "line-color": "#3A3A3C", "line-width": 4, "line-dasharray": [1.2, 1.6] } });
     m.addSource("bici", { type: "geojson", data: linea("bici") });
-    m.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#b5005e", "line-width": 5 } });
+    m.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#00A7CF", "line-width": 5 } });
   });
-  const origen = document.createElement("div"); origen.className = "pin"; origen.style.cssText += ";width:18px;height:18px;background:#1a35e6";
+  const origen = document.createElement("div"); origen.className = "pin"; origen.style.cssText += ";width:18px;height:18px;background:#3A3A3C";
   new maplibregl.Marker({ element: origen }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(m);
   d.validos.filter(t => t.modo === "bici").forEach(t => [[t.retiro, t.desde, "bicis"], [t.devolucion, t.hasta, "anclajes"]].forEach(([est, p, clave]) => {   // estaciones: cuadrados
     const el = document.createElement("div");
@@ -1060,7 +1142,7 @@ function pintarMapaMiRuta(d) {
     new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(m);
   }));
   plan.ids.map(porId).forEach((l, i) => {                                           // hotspots: círculos numerados
-    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#e30077";
+    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#B5543A";
     new maplibregl.Marker({ element: pin }).setLngLat([l.lon, l.lat]).addTo(m);
   });
 }
@@ -1374,14 +1456,14 @@ function pintarMapaRecorrido(validos, elegida) {
   mapa.once("style.load", () => {              // no hace falta esperar a los tiles para dibujar las líneas
     if (window.PEDALITO_CICLOVIAS) {
       mapa.addSource("ciclovias", { type: "geojson", data: window.PEDALITO_CICLOVIAS });
-      mapa.addLayer({ id: "ciclovias", type: "line", source: "ciclovias", paint: { "line-color": "#00baf1", "line-width": 2, "line-opacity": .45 } });
+      mapa.addLayer({ id: "ciclovias", type: "line", source: "ciclovias", paint: { "line-color": "#7FB2C9", "line-width": 2, "line-opacity": 1 } });
     }
     mapa.addSource("pie", { type: "geojson", data: linea("pie") });
     mapa.addLayer({ id: "pie", type: "line", source: "pie", layout: { "line-cap": "butt", "line-join": "round" },
-      paint: { "line-color": "#092957", "line-width": 4, "line-dasharray": [1.2, 1.6] } });      // caminata: punteada
+      paint: { "line-color": "#3A3A3C", "line-width": 4, "line-dasharray": [1.2, 1.6] } });      // caminata: punteada
     mapa.addSource("bici", { type: "geojson", data: linea("bici") });
     mapa.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#203ae9", "line-width": 5 } });                                      // bici: línea continua
+      paint: { "line-color": "#00A7CF", "line-width": 5 } });                                      // bici: línea continua
   });
   const marca = (p, texto, fondo) => {
     const pin = document.createElement("div");
@@ -1389,7 +1471,7 @@ function pintarMapaRecorrido(validos, elegida) {
     new maplibregl.Marker({ element: pin }).setLngLat([p.lon, p.lat]).setPopup(new maplibregl.Popup({ offset: 14 }).setText(p.nombre)).addTo(mapa);
   };
   const origenPin = document.createElement("div");
-  origenPin.className = "pin"; origenPin.style.cssText += ";width:16px;height:16px;background:#092957";
+  origenPin.className = "pin"; origenPin.style.cssText += ";width:16px;height:16px;background:#3A3A3C";
   new maplibregl.Marker({ element: origenPin }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapa);
   // Etapa 1 (retirar): círculo con las bicis disponibles ahora. Etapa 2 (dejar la bici): círculo con los anclajes libres ahora.
   const pinEstacion = (est, p, clave, rol) => {
@@ -1407,8 +1489,8 @@ function pintarMapaRecorrido(validos, elegida) {
     new maplibregl.Marker({ element: el }).setLngLat([e.lon, e.lat]).setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(popupEstacion(e))).addTo(mapa);
   });
   validos.filter(t => t.modo === "bici").forEach(t => { pinEstacion(t.retiro, t.desde, "bicis", "Retirar la bici"); pinEstacion(t.devolucion, t.hasta, "anclajes", "Dejar la bici"); });
-  plan.ids.map(porId).forEach((l, i) => marca(l, i + 1, "#f90083"));
-  if (plan.hasta) marca({ lat: plan.hasta.lat, lon: plan.hasta.lon, nombre: `Final: ${plan.hasta.nombre}` }, "★", "#092957");
+  plan.ids.map(porId).forEach((l, i) => marca(l, i + 1, "#B5543A"));
+  if (plan.hasta) marca({ lat: plan.hasta.lat, lon: plan.hasta.lon, nombre: `Final: ${plan.hasta.nombre}` }, "★", "#3A3A3C");
   // Anillo que marca el paso actual
   const anillo = document.createElement("div");
   anillo.className = "anillo-paso";
@@ -1494,7 +1576,7 @@ function seguirGPS() {
     const yo = { lat: pos.coords.latitude, lon: pos.coords.longitude }, precision = pos.coords.accuracy || 0;
     if (mapa && !marcaYo) {
       const punto = document.createElement("div");
-      punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#203ae9;border:3px solid #fff;box-shadow:0 0 0 10px rgba(32,58,233,.25)";
+      punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #3A3A3C";
       marcaYo = new maplibregl.Marker({ element: punto }).setLngLat([yo.lon, yo.lat]).addTo(mapa);
     }
     marcaYo?.setLngLat([yo.lon, yo.lat]);

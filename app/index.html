@@ -5,29 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pedalito · Cultura en EcoBici</title>
   <meta name="description" content="Pedalito arma recorridos culturales en EcoBici por Buenos Aires: museos, teatros, ferias y más, según dónde estás.">
-  <meta name="theme-color" content="#f8f9fc">
+  <meta name="theme-color" content="#F4EFE6">
   <link rel="icon" href="data:,">   <!-- sin ícono propio todavía: evita el pedido de /favicon.ico que daba error 404 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="app">
+<div class="app-scroll">
   <p class="toast" id="toast" role="status" hidden></p>
   <!-- Llegada a una estación o a un lugar: círculo rosa que entra desde la derecha + confeti -->
   <div class="celebracion" id="celebracion" role="status" hidden>
     <canvas id="confeti" aria-hidden="true"></canvas>
     <div class="circulo-rosa"><div class="caja-llegada"><strong id="celebracion-texto"></strong></div></div>
   </div>
-  <button class="atras" id="atras" type="button" aria-label="Volver" hidden>←</button>
+  <!-- Capas del mapa (Ubicación, Inicio y Explorar): sin ninguna activa el mapa queda limpio -->
+  <div class="filtro-mapa" id="filtro-mapa" role="group" aria-label="Qué mostrar en el mapa" hidden>
+    <button type="button" class="capa" data-capa="estaciones" aria-pressed="true"><i class="cuadrado-est" aria-hidden="true"></i>Estaciones EcoBici</button>
+    <button type="button" class="capa" data-capa="hotspots" aria-pressed="true"><i class="circulo-hot" aria-hidden="true"></i>Hotspots</button>
+  </div>
+  <button class="atras" id="atras" type="button" aria-label="Volver" hidden><svg class="ico-flecha atras-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.6,12L8,7.4L9.4,6l6,6l-6,6L8,16.6L12.6,12Z"/></svg></button>
 
-  <!-- 00 · Bienvenida (cada vez que se abre la página: solo "Bienvenido" y el botón para comenzar) -->
+  <!-- 00 · Bienvenida (cada vez que se abre la página: solo el saludo y el botón para comenzar, centrados) -->
   <section class="pantalla centrada" id="bienvenida">
-    <h1>¡Bienvenido a recorrer la Ciudad Autónoma de Buenos Aires!</h1>
-    <p class="credito-bienvenida">Foto: Luis Argerich · <a href="https://commons.wikimedia.org/wiki/File:Buenos_Aires_-_La_Boca_-_Caminito_-_200807d.jpg" target="_blank" rel="noopener">CC BY 2.0</a> · Wikimedia Commons</p>
-    <a class="boton fijo" id="comenzar" href="#intereses">Comenzar a pedalear</a>
+    <div class="bienvenida-centro">
+      <h1>Bienvenido a pedalear</h1>
+      <a class="boton" id="comenzar" href="#intereses">Comenzar a pedalear</a>
+    </div>
   </section>
 
   <!-- 01 · Crear cuenta -->
@@ -55,10 +62,10 @@
   <!-- 02 · Intereses -->
   <section class="pantalla" id="intereses">
     <div class="contenido bajo">
-      <h1>¿Qué tipo de actividad harías hoy?</h1>
+      <h1>¿Qué tipo de actividad preferís?</h1>
       <p class="sub">Elegí de 2 a 5 intereses. Los podés cambiar después.</p>
-      <div class="chips" id="chips-intereses"></div>
       <p class="nota">Tu selección mejora “Para vos” y los recorridos sugeridos.</p>
+      <div class="chips" id="chips-intereses"></div>
     </div>
     <button class="boton fijo" id="guardar-intereses" disabled>Guardar intereses</button>
   </section>
@@ -67,7 +74,7 @@
   <!-- Mismo formato que Home y Explorar: mapa de fondo y panel blanco que sube hasta la mitad de la pantalla -->
   <section class="pantalla con-hoja" id="ubicacion">
     <div class="mapa-fondo" id="mapa-ubicacion" aria-label="Mapa para elegir tu punto de salida"></div>
-    <div class="hoja-desliz" id="hoja-ubicacion" data-abierta="55" data-cerrada="30">
+    <div class="hoja-desliz" id="hoja-ubicacion" data-abierta="55" data-cerrada="30" data-maxima="75">
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <h1>Elegí tu punto de partida</h1>
@@ -78,10 +85,11 @@
           <button type="button" class="borrar" id="borrar-origen" aria-label="Borrar la búsqueda" hidden>✕</button>
         </div>
         <ul class="sugerencias" id="sugerencias" hidden></ul>
+        <p class="error-zona" id="origen-error" role="alert" hidden></p>
         <button class="tarjeta-accion" id="usar-ubicacion" type="button">
           <span class="icono-circulo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></span>
           <span class="cuerpo"><strong>Usar mi ubicación actual</strong><small>Con el GPS de tu celular</small></span>
-          <span class="chevron" aria-hidden="true">›</span>
+          <span class="chevron" aria-hidden="true"><svg class="ico-flecha" viewBox="0 0 24 24"><path d="M12.6,12L8,7.4L9.4,6l6,6l-6,6L8,16.6L12.6,12Z"/></svg></span>
         </button>
         <p class="nota" id="origen-aviso">Tocá el mapa o arrastrá el punto para ajustar.</p>
         <div class="seccion-cab"><h2>Estaciones EcoBici cercanas</h2><span class="etiqueta" id="estaciones-tag">Estimado</span></div>
@@ -129,26 +137,39 @@
        data-abierta / data-cerrada = % de la pantalla que ocupa el panel en cada estado. -->
   <section class="pantalla con-hoja" id="inicio">
     <div class="mapa-fondo" id="mapa-home" aria-label="Mapa en vivo de tu zona: arrastralo y hacé zoom"></div>
-    <div class="hoja-desliz" id="hoja-inicio" data-abierta="50" data-cerrada="25">
+    <div class="hoja-desliz" id="hoja-inicio" data-abierta="50" data-cerrada="25" data-maxima="75">
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <div class="saludo">
-          <h1 id="saludo">¡Buen día!</h1>
-          <p class="sub">¿Qué recorremos hoy?</p>
+          <div class="saludo-fila">
+            <div class="saludo-texto">
+              <h1 id="saludo">¡Buen día!</h1>
+              <p class="sub">¿Qué recorremos hoy?</p>
+            </div>
+            <div class="clima" id="clima" role="status" aria-live="polite">
+              <img id="clima-icono" alt="" width="44" height="44" hidden>
+              <strong id="clima-temp">– °C</strong>
+              <small id="clima-desc">Clima…</small>
+            </div>
+          </div>
           <a class="origen-caja" href="#ubicacion" aria-label="Cambiar el punto de partida">
             <span class="origen-pin" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
             <span class="origen-texto"><small>Punto de partida</small><strong id="origen-nombre"></strong></span>
             <span class="origen-cambiar">Cambiar <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>
           </a>
-          <p class="clima" id="clima">Clima…</p>
-          <p class="nota" id="nota-bicis">Cargando las bicis disponibles…</p>
-          <ul class="leyenda-bicis" id="leyenda-bicis" aria-label="Colores de las estaciones">
-            <li><i style="background:#111418"></i>Sin bicis</li>
-            <li><i style="background:#e5202e"></i>Bajo</li>
-            <li><i style="background:#f76c09"></i>Medio</li>
-            <li><i style="background:#ffd400"></i>Alto</li>
-            <li><i class="cuadrado"></i>Hotspots</li>
-          </ul>
+          <div class="referencias referencias-inicio">
+            <div class="referencias-cab"><span class="etiqueta">Referencias del mapa</span><button type="button" class="menos" id="ref-inicio-boton" aria-expanded="false" aria-controls="ref-inicio-cuerpo" aria-label="Mostrar las referencias del mapa">+</button></div>
+            <div class="referencias-cuerpo" id="ref-inicio-cuerpo" hidden>
+              <p class="nota" id="nota-bicis">Cargando las bicis disponibles…</p>
+              <ul class="leyenda-bicis" id="leyenda-bicis" aria-label="Colores de las estaciones">
+                <li><i style="background:var(--n-ninguna)"></i>Sin bicis</li>
+                <li><i style="background:var(--n-baja)"></i>Bajo</li>
+                <li><i style="background:var(--n-media)"></i>Medio</li>
+                <li><i style="background:var(--n-alta)"></i>Alto</li>
+                <li><i class="cuadrado"></i>Hotspots</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <h2>Últimas fechas disponibles este mes</h2>
@@ -195,51 +216,55 @@
     </div>
   </section>
 
-  <!-- 05 · Planificar -->
-  <section class="pantalla" id="planificar">
-    <h1>Mi ruta en bici</h1>
-    <p class="sub" id="miruta-sub">Pedaleo cultural personalizado</p>
+  <!-- 05 · Planificar: mapa de fondo y, encima, la caja con toda la información (mismo formato que Inicio, Explorar y el recorrido) -->
+  <section class="pantalla con-hoja" id="planificar">
+    <div class="mapa-fondo" id="mapa-miruta" aria-label="Mapa de tu ruta"></div>
+    <span class="chip-mapa" id="chip-ciclo" hidden></span>
+    <span class="chip-mapa der" id="chip-bicis" hidden></span>
+    <div class="hoja-desliz" id="hoja-planificar" data-abierta="62" data-cerrada="30" data-maxima="85">
+      <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
+      <div class="hoja-scroll">
+        <h1>Mi ruta en bici</h1>
+        <p class="sub" id="miruta-sub">Pedaleo cultural personalizado</p>
 
-    <!-- Sin hotspots sumados todavía -->
-    <div class="ruta-vacia" id="miruta-vacia" hidden>
-      <strong>Todavía no sumaste hotspots</strong>
-      <p>Explorá la ciudad y tocá «Agregar al recorrido» en los hotspots que quieras visitar: acá vas a ver tu ruta.</p>
-      <a class="boton" href="#explorar">Explorar hotspots</a>
+        <!-- Sin hotspots sumados todavía -->
+        <div class="ruta-vacia" id="miruta-vacia" hidden>
+          <strong>Todavía no sumaste hotspots</strong>
+          <p>Explorá la ciudad y tocá «Agregar al recorrido» en los hotspots que quieras visitar: acá vas a ver tu ruta.</p>
+          <a class="boton" href="#explorar">Explorar hotspots</a>
+        </div>
+
+        <div id="miruta-contenido" hidden>
+          <p class="nota" id="miruta-estado" role="status" hidden></p>
+          <div id="miruta-resultado" hidden>
+            <div class="stats-ruta" aria-label="Resumen de la ruta">
+              <div><strong id="stat-minutos">–</strong><span>minutos</span></div>
+              <div class="central"><strong id="stat-km">–</strong><span>kilómetros</span></div>
+              <div><strong id="stat-ciclo">–</strong><span>por ciclovía</span></div>
+            </div>
+            <h2>Itinerario del circuito</h2>
+            <ol class="itinerario" id="itinerario"></ol>
+            <button class="boton compacto sumar-mas" id="miruta-sumar-mas" type="button" hidden>Sumar otro hotspot</button>
+            <h2>Impacto de tu salida</h2>
+            <div class="impacto">
+              <div class="impacto-verde"><span class="etiqueta">Huella verde</span><strong id="impacto-co2">–</strong><small>de CO₂ evitado frente a hacer el trayecto en auto (estimación)</small></div>
+              <div class="impacto-azul"><span class="etiqueta">Por ciclovía</span><strong id="impacto-ciclo">–</strong><small>del trayecto en bici va por ciclovía</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div id="miruta-contenido" hidden>
-      <p class="nota" id="miruta-estado" role="status" hidden></p>
-      <div id="miruta-resultado" hidden>
-        <div class="stats-ruta" aria-label="Resumen de la ruta">
-          <div><strong id="stat-minutos">–</strong><span>minutos</span></div>
-          <div class="central"><strong id="stat-km">–</strong><span>kilómetros</span></div>
-          <div><strong id="stat-ciclo">–</strong><span>por ciclovía</span></div>
-        </div>
-        <div class="mapa-ruta">
-          <div id="mapa-miruta" aria-label="Mapa de tu ruta"></div>
-          <span class="chip-mapa" id="chip-ciclo" hidden></span>
-          <span class="chip-mapa der" id="chip-bicis"></span>
-        </div>
-        <h2>Itinerario del circuito</h2>
-        <ol class="itinerario" id="itinerario"></ol>
-        <button class="boton compacto sumar-mas" id="miruta-sumar-mas" type="button" hidden>Sumar otro hotspot</button>
-        <h2>Impacto de tu salida</h2>
-        <div class="impacto">
-          <div class="impacto-verde"><span class="etiqueta">Huella verde</span><strong id="impacto-co2">–</strong><small>de CO₂ evitado frente a hacer el trayecto en auto (estimación)</small></div>
-          <div class="impacto-azul"><span class="etiqueta">Por ciclovía</span><strong id="impacto-ciclo">–</strong><small>del trayecto en bici va por ciclovía</small></div>
-        </div>
-      </div>
-      <div class="botones-ruta">
-        <button class="boton" id="miruta-iniciar" type="button" disabled>Iniciar pedaleo con GPS</button>
-        <button class="boton contorno" id="miruta-modificar" type="button">Modificar paradas</button>
-      </div>
+    <!-- Siempre a la vista, justo encima de la barra de inicio -->
+    <div class="botones-ruta" id="botones-ruta" hidden>
+      <button class="boton" id="miruta-iniciar" type="button" disabled>Iniciar pedaleo con GPS</button>
+      <button class="boton contorno" id="miruta-modificar" type="button">Modificar paradas</button>
     </div>
   </section>
 
   <!-- 06 · Recorrido y guía paso a paso (mapa de fondo + panel deslizable; la llegada se festeja en esta misma pantalla) -->
   <section class="pantalla con-hoja" id="recorrido">
     <div class="mapa-fondo" id="mapa" aria-label="Mapa del recorrido"></div>
-    <div class="hoja-desliz" id="hoja-recorrido" data-abierta="50" data-cerrada="25">
+    <div class="hoja-desliz" id="hoja-recorrido" data-abierta="50" data-cerrada="25" data-maxima="75">
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <div class="paso-actual" id="paso-actual">
@@ -268,10 +293,10 @@
           <span class="capsula"><i class="muestra cicl"></i>Ciclovías</span>
         </div>
         <ul class="leyenda-bicis" aria-label="Colores de las estaciones EcoBici">
-          <li><i style="background:#111418"></i>Sin bicis</li>
-          <li><i style="background:#e5202e"></i>Bajo</li>
-          <li><i style="background:#f76c09"></i>Medio</li>
-          <li><i style="background:#ffd400"></i>Alto</li>
+          <li><i style="background:var(--n-ninguna)"></i>Sin bicis</li>
+          <li><i style="background:var(--n-baja)"></i>Bajo</li>
+          <li><i style="background:var(--n-media)"></i>Medio</li>
+          <li><i style="background:var(--n-alta)"></i>Alto</li>
         </ul>
         </div>
         </div>
@@ -348,7 +373,7 @@
   <!-- 11 · Detalle lugar -->
   <section class="pantalla detalle" id="lugar">
     <div class="hero" id="detalle-hero">
-      <button class="redondo izq" id="atras-lugar" type="button" aria-label="Volver">←</button>
+      <button class="redondo izq" id="atras-lugar" type="button" aria-label="Volver"><svg class="ico-flecha atras-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.6,12L8,7.4L9.4,6l6,6l-6,6L8,16.6L12.6,12Z"/></svg></button>
       <button class="redondo der" id="guardar-lugar" aria-label="Guardar hotspot">♡</button>
     </div>
     <div class="ficha">
@@ -366,7 +391,7 @@
   <!-- 12 · Detalle de actividad: qué vas a ver, quiénes, desde cuándo, dato curioso y enlace -->
   <section class="pantalla detalle" id="actividad">
     <div class="hero" id="act-hero">
-      <button class="redondo izq" id="atras-actividad" type="button" aria-label="Volver">←</button>
+      <button class="redondo izq" id="atras-actividad" type="button" aria-label="Volver"><svg class="ico-flecha atras-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.6,12L8,7.4L9.4,6l6,6l-6,6L8,16.6L12.6,12Z"/></svg></button>
     </div>
     <div class="ficha">
       <span class="etiqueta-rosa" id="act-tipo"></span>
@@ -404,6 +429,7 @@
     <a href="#perfil" data-tab="perfil" aria-label="Perfil">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg><span>Perfil</span></a>
   </nav>
+</div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
