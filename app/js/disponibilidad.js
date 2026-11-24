@@ -31,7 +31,7 @@
     if (n <= 0) return { nivel: "ninguna", color: COLORES.ninguna, claro: false, pct: 0 };
     const pct = Math.min(100, Math.max(1, Math.round(100 * n / Math.max(Number(capacidad) || n, n))));
     const nivel = pct <= 35 ? "baja" : pct <= 70 ? "media" : "alta";
-    return { nivel, color: COLORES[nivel], claro: nivel === "media", pct };      // claro: el amarillo lleva texto oscuro
+    return { nivel, color: COLORES[nivel], claro: true, pct };      // claro: fondo claro o con trama, lleva texto negro
   }
 
   const distM = (a, b) => {

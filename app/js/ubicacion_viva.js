@@ -51,7 +51,7 @@ window.UBI = (function () {
       if (m.getSource(FUENTE)) m.getSource(FUENTE).setData(dato);
       else {
         m.addSource(FUENTE, { type: "geojson", data: dato });
-        m.addLayer({ id: CAPA, type: "fill", source: FUENTE, paint: { "fill-color": "#2F6B4F", "fill-opacity": 0.12 } });
+        m.addLayer({ id: CAPA, type: "fill", source: FUENTE, paint: { "fill-color": "#000", "fill-opacity": 0.12 } });
       }
     }
   }

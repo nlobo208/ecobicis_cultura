@@ -239,7 +239,7 @@ function pintarUbicacion() {
     mapaUbi.jumpTo({ padding: { top: 0, left: 0, right: 0, bottom: Math.round(hojaUbicacion.visiblePx()) } });
     mapaUbi.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaUbi.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
-    marcaUbi = new maplibregl.Marker({ color: "#B5543A", draggable: true }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaUbi);
+    marcaUbi = new maplibregl.Marker({ color: "#000", draggable: true }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaUbi);
     marcaUbi.on("dragend", () => { const p = marcaUbi.getLngLat(); elegirPunto({ lat: p.lat, lon: p.lng }); });
     mapaUbi.on("click", e => elegirPunto({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
   } else {
@@ -597,7 +597,7 @@ function pintarActividad(id) {
 // ---------- 13 · Pasaporte cultural ----------
 // Un sello por cada lugar visitado, en la página de su barrio. Los hotspots que faltan aparecen como huecos para descubrir.
 // El dibujo de cada sello se carga en img/sellos/<id>.png y se avisa en data/sellos.js; mientras tanto se usa la forma base.
-const TINTAS = ["#8E6BBF", "#C8102E", "#F2B705", "#2F6B4F", "#7FB2C9"];   // las de la paleta, una por categoría
+const TINTAS = ["#000", "#000", "#000", "#000", "#000"];   // las de la paleta, una por categoría
 const iniciales = nombre => nombre.replace(/\([^)]*\)/g, "").split(/\s+/).filter(w => w && !/^(de|del|la|el|los|las|y|en)$/i.test(w)).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 function selloHTML(l, visitado, extra = "") {
   const f = visitado && estado.sellos?.[l.id] ? new Date(estado.sellos[l.id]).toLocaleDateString("es-AR", { day: "numeric", month: "short" }) : "";
@@ -660,7 +660,7 @@ function pintarPin(el, numero, clave, sinDatos = "") {
 /** Sin datos en vivo: pinta el círculo con el color de la estimación (rojo bajo, naranja medio, amarillo alto). */
 function pintarEstimado(el, est, clave) {
   const p = PRED.predecirEstacion(est.numero, new Date(), 0), nv = clave === "bicis" ? p.nivelBicis : p.nivelAnclajes;
-  el.style.background = COLOR_NIVEL[nv]; el.classList.toggle("claro", nv === "media");
+  el.style.background = COLOR_NIVEL[nv]; el.classList.add("claro");
 }
 
 function popupEstacion(e) {
@@ -733,7 +733,7 @@ function dibujarCiclovias(mapa) {
     if (mapa.getSource("ciclovias")) return;
     mapa.addSource("ciclovias", { type: "geojson", data: window.PEDALITO_CICLOVIAS });
     mapa.addLayer({ id: "ciclovias", type: "line", source: "ciclovias", layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#00A7CF", "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2, 14, 3.5, 17, 6], "line-opacity": 1 } });
+      paint: { "line-color": "#000", "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2, 14, 3.5, 17, 6], "line-opacity": 1 } });
   };
   if (mapa.isStyleLoaded()) agregar(); else mapa.on("style.load", agregar);
 }
@@ -780,7 +780,7 @@ function pintarMapaHome() {
   mapaHome.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   mapaHome.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
   const punto = document.createElement("div");
-  punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #3A3A3C";
+  punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#000;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #000";
   marcaHome = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaHome);
   pintarEstacionesHome(); pintarLugaresHome();
 }
@@ -871,7 +871,7 @@ async function pintarTendencias() {
 }
 
 // ---------- 04 · Explorar ----------
-const COLOR_TARJETA = { naranja: "#B5543A", celeste: "#7FB2C9", verde: "#2F6B4F", rosa: "#8E6BBF" };
+const COLOR_TARJETA = { naranja: "#000", celeste: "#000", verde: "#000", rosa: "#000" };
 const ZONA_FOCO = 90;             // px de scroll en los que una tarjeta pasa de tamaño normal a agrandada (= lo que se asoma de cada tarjeta apilada)
 let mapaExp, marcaExp;
 // Los tres filtros son interruptores independientes: se pueden combinar o apagar todos (entonces se ve todo, del más cerca al más lejos)
@@ -947,7 +947,7 @@ function pintarMapaExplorar() {
     mapaExp.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaExp.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
     const punto = document.createElement("div");
-    punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #3A3A3C";
+    punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#000;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #000";
     marcaExp = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaExp);
     mapaExp.jumpTo({ padding: paddingMapaCompartido() });
     recordarVista(mapaExp, "exp");
@@ -999,7 +999,7 @@ function pintarLugar(id) {
   const hero = $("#detalle-hero");
   hero.style.backgroundImage = l.img ? `url("${fotoUrl(l)}")` : "";
   $("#detalle-categoria").textContent = l.categoria; $("#detalle-categoria").dataset.grupo = grupoDe(l.categoria);
-  $("#detalle-bloque").dataset.grupo = grupoDe(l.categoria); $("#detalle-lateral-texto").textContent = l.categoria;
+  $("#detalle-bloque").dataset.grupo = grupoDe(l.categoria); $("#lugar").dataset.grupo = grupoDe(l.categoria); $("#detalle-lateral-texto").textContent = l.categoria;
   $("#detalle-nombre").textContent = l.nombre;
   $("#detalle-meta").textContent = `${fmtKm(desdeOrigen(l))} · ${l.barrio}`;
   $("#detalle-desc").textContent = `${l.direccion}. Estación EcoBici más cercana a ${l.dist_m} m.`;
@@ -1157,7 +1157,7 @@ function prepararMapaMiRuta() {
     mapaMiRuta.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapaMiRuta.addControl(new maplibregl.AttributionControl({ compact: true }), "top-right");
     const punto = document.createElement("div");
-    punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #fff;box-shadow:0 0 0 2px #3A3A3C";
+    punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#000;border:3px solid #fff;box-shadow:0 0 0 2px #000";
     marcaMiRuta = new maplibregl.Marker({ element: punto }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapaMiRuta);
     recordarVista(mapaMiRuta, "ruta");
   } else {
@@ -1175,9 +1175,9 @@ function ponerLineasRuta(d) {
   const poner = () => {
     if (m.getSource("pie")) { m.getSource("pie").setData(linea("pie")); m.getSource("bici").setData(linea("bici")); return; }
     m.addSource("pie", { type: "geojson", data: linea("pie") });
-    m.addLayer({ id: "pie", type: "line", source: "pie", layout: { "line-cap": "butt", "line-join": "round" }, paint: { "line-color": "#3A3A3C", "line-width": 4, "line-dasharray": [1.2, 1.6] } });
+    m.addLayer({ id: "pie", type: "line", source: "pie", layout: { "line-cap": "butt", "line-join": "round" }, paint: { "line-color": "#000", "line-width": 4, "line-dasharray": [1.2, 1.6] } });
     m.addSource("bici", { type: "geojson", data: linea("bici") });
-    m.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#B5543A", "line-width": 5 } });
+    m.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#000", "line-width": 7 } });
   };
   if (m.isStyleLoaded()) poner(); else m.once("style.load", poner);
 }
@@ -1194,7 +1194,7 @@ function pintarMapaEstaciones(cerca) {
     marcasRuta.push(new maplibregl.Marker({ element: el }).setLngLat([est.lon, est.lat]).addTo(mapaMiRuta));
   });
   estado.destinos.map(porId).filter(Boolean).forEach((l, i) => {
-    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#B5543A";
+    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#000";
     marcasRuta.push(new maplibregl.Marker({ element: pin }).setLngLat([l.lon, l.lat]).addTo(mapaMiRuta));
   });
 }
@@ -1210,7 +1210,7 @@ function pintarMapaMiRuta(d) {
     marcasRuta.push(new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(mapaMiRuta));
   }));
   plan.ids.map(porId).forEach((l, i) => {                                           // hotspots: círculos numerados
-    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#B5543A";
+    const pin = document.createElement("div"); pin.className = "pin"; pin.textContent = i + 1; pin.style.background = "#000";
     marcasRuta.push(new maplibregl.Marker({ element: pin }).setLngLat([l.lon, l.lat]).addTo(mapaMiRuta));
   });
 }
@@ -1526,10 +1526,10 @@ function pintarMapaRecorrido(validos, elegida) {
     dibujarCiclovias(mapa);
     mapa.addSource("pie", { type: "geojson", data: linea("pie") });
     mapa.addLayer({ id: "pie", type: "line", source: "pie", layout: { "line-cap": "butt", "line-join": "round" },
-      paint: { "line-color": "#3A3A3C", "line-width": 4, "line-dasharray": [1.2, 1.6] } });      // caminata: punteada
+      paint: { "line-color": "#000", "line-width": 4, "line-dasharray": [1.2, 1.6] } });      // caminata: punteada
     mapa.addSource("bici", { type: "geojson", data: linea("bici") });
     mapa.addLayer({ id: "bici", type: "line", source: "bici", layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#B5543A", "line-width": 5 } });                                      // bici: línea continua
+      paint: { "line-color": "#000", "line-width": 6 } });                                      // bici: línea continua
   });
   const marca = (p, texto, fondo) => {
     const pin = document.createElement("div");
@@ -1537,7 +1537,7 @@ function pintarMapaRecorrido(validos, elegida) {
     new maplibregl.Marker({ element: pin }).setLngLat([p.lon, p.lat]).setPopup(new maplibregl.Popup({ offset: 14 }).setText(p.nombre)).addTo(mapa);
   };
   const origenPin = document.createElement("div");
-  origenPin.className = "pin"; origenPin.style.cssText += ";width:16px;height:16px;background:#3A3A3C";
+  origenPin.className = "pin"; origenPin.style.cssText += ";width:16px;height:16px;background:#000";
   new maplibregl.Marker({ element: origenPin }).setLngLat([ORIGEN.lon, ORIGEN.lat]).addTo(mapa);
   // Etapa 1 (retirar): círculo con las bicis disponibles ahora. Etapa 2 (dejar la bici): círculo con los anclajes libres ahora.
   const pinEstacion = (est, p, clave, rol) => {
@@ -1555,8 +1555,8 @@ function pintarMapaRecorrido(validos, elegida) {
     new maplibregl.Marker({ element: el }).setLngLat([e.lon, e.lat]).setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(popupEstacion(e))).addTo(mapa);
   });
   validos.filter(t => t.modo === "bici").forEach(t => { pinEstacion(t.retiro, t.desde, "bicis", "Retirar la bici"); pinEstacion(t.devolucion, t.hasta, "anclajes", "Dejar la bici"); });
-  plan.ids.map(porId).forEach((l, i) => marca(l, i + 1, "#B5543A"));
-  if (plan.hasta) marca({ lat: plan.hasta.lat, lon: plan.hasta.lon, nombre: `Final: ${plan.hasta.nombre}` }, "★", "#3A3A3C");
+  plan.ids.map(porId).forEach((l, i) => marca(l, i + 1, "#000"));
+  if (plan.hasta) marca({ lat: plan.hasta.lat, lon: plan.hasta.lon, nombre: `Final: ${plan.hasta.nombre}` }, "★", "#000");
   // Anillo que marca el paso actual
   const anillo = document.createElement("div");
   anillo.className = "anillo-paso";
@@ -1642,7 +1642,7 @@ function seguirGPS() {
     const yo = { lat: pos.coords.latitude, lon: pos.coords.longitude }, precision = pos.coords.accuracy || 0;
     if (mapa && !marcaYo) {
       const punto = document.createElement("div");
-      punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#00A7CF;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #3A3A3C";
+      punto.style.cssText = "width:18px;height:18px;border-radius:50%;background:#000;border:3px solid #F4EFE6;box-shadow:0 0 0 2px #000";
       marcaYo = new maplibregl.Marker({ element: punto }).setLngLat([yo.lon, yo.lat]).addTo(mapa);
     }
     marcaYo?.setLngLat([yo.lon, yo.lat]);
