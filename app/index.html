@@ -92,8 +92,8 @@
           <span class="chevron" aria-hidden="true"><svg class="ico-flecha" viewBox="0 0 24 24"><path d="M12.6,12L8,7.4L9.4,6l6,6l-6,6L8,16.6L12.6,12Z"/></svg></span>
         </button>
         <p class="nota" id="origen-aviso">Tocá el mapa o arrastrá el punto para ajustar.</p>
-        <div class="seccion-cab"><h2>Estaciones EcoBici cercanas</h2><span class="etiqueta" id="estaciones-tag">Estimado</span></div>
-        <ul class="lista-estaciones" id="estaciones-cercanas"></ul>
+        <div class="seccion-cab" hidden><h2>Estaciones EcoBici cercanas</h2><span class="etiqueta" id="estaciones-tag">Estimado</span></div>
+        <ul class="lista-estaciones" id="estaciones-cercanas" hidden></ul>
         <div class="seccion-cab"><h2>Tus lugares frecuentes</h2><a class="editar" href="#accesos">Editar</a></div>
         <div class="frecuentes" id="frecuentes"></div>
         <button class="boton" id="confirmar-origen" disabled>Confirmar punto de partida</button>
@@ -167,6 +167,7 @@
                 <li><i style="background:var(--n-media)"></i>Medio</li>
                 <li><i style="background:var(--n-alta)"></i>Alto</li>
                 <li><i class="cuadrado"></i>Hotspots</li>
+                <li><i class="linea-ciclo"></i>Ciclovía</li>
               </ul>
             </div>
           </div>
@@ -208,6 +209,8 @@
           <button class="chip activo" data-filtro="cerca" aria-pressed="true">Más cerca</button>
           <button class="chip" data-filtro="intereses" aria-pressed="false">Mis intereses</button>
           <button class="chip" data-filtro="verificado" aria-pressed="false">Horario verificado</button>
+          <button class="chip" data-filtro="gastro" aria-pressed="false">Gastronomía</button>
+          <button class="chip" data-filtro="cultura" aria-pressed="false">Espacios culturales</button>
         </div>
         <h2 id="cantidad">0 hotspots</h2>
         <div class="apiladas foco" id="lista-lugares"></div>
@@ -221,11 +224,10 @@
     <div class="mapa-fondo" id="mapa-miruta" aria-label="Mapa de tu ruta"></div>
     <span class="chip-mapa" id="chip-ciclo" hidden></span>
     <span class="chip-mapa der" id="chip-bicis" hidden></span>
-    <div class="hoja-desliz" id="hoja-planificar" data-abierta="62" data-cerrada="30" data-maxima="85">
+    <div class="hoja-desliz" id="hoja-planificar" data-abierta="70" data-cerrada="48" data-maxima="88">
       <button class="agarre" type="button" aria-label="Subir o bajar el panel"><span></span></button>
       <div class="hoja-scroll">
         <h1>Mi ruta en bici</h1>
-        <p class="sub" id="miruta-sub">Pedaleo cultural personalizado</p>
 
         <!-- Sin hotspots sumados todavía -->
         <div class="ruta-vacia" id="miruta-vacia" hidden>
@@ -235,6 +237,12 @@
         </div>
 
         <div id="miruta-contenido" hidden>
+          <!-- Primero se elige la estación de retiro (tres opciones); recién después se arma el recorrido completo -->
+          <div id="miruta-estaciones" hidden>
+            <h2>Elegí dónde retirar tu bici</h2>
+            <p class="nota">Las tres estaciones EcoBici más convenientes cerca de tu salida.</p>
+            <ul class="lista-estaciones" id="miruta-estaciones-lista"></ul>
+          </div>
           <p class="nota" id="miruta-estado" role="status" hidden></p>
           <div id="miruta-resultado" hidden>
             <div class="stats-ruta" aria-label="Resumen de la ruta">
@@ -372,15 +380,25 @@
 
   <!-- 11 · Detalle lugar -->
   <section class="pantalla detalle" id="lugar">
-    <div class="hero" id="detalle-hero">
+    <!-- Arriba: franja blanca con volver y guardar -->
+    <div class="detalle-barra">
       <button class="redondo izq" id="atras-lugar" type="button" aria-label="Volver"><svg class="ico-flecha atras-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.6,12L8,7.4L9.4,6l6,6l-6,6L8,16.6L12.6,12Z"/></svg></button>
       <button class="redondo der" id="guardar-lugar" aria-label="Guardar hotspot">♡</button>
     </div>
-    <div class="ficha">
+    <!-- Centro: un solo bloque de color con lo principal -->
+    <div class="detalle-bloque" id="detalle-bloque">
       <span class="etiqueta-rosa" id="detalle-categoria"></span>
       <h1 id="detalle-nombre"></h1>
       <p class="sub" id="detalle-meta"></p>
       <p class="texto" id="detalle-desc"></p>
+    </div>
+    <!-- Imagen con una franja de color al costado -->
+    <div class="detalle-imagen">
+      <div class="hero" id="detalle-hero"></div>
+      <div class="detalle-lateral" aria-hidden="true"><span id="detalle-lateral-texto"></span></div>
+    </div>
+    <!-- Abajo: otra caja de color con los horarios y la ficha -->
+    <div class="ficha detalle-caja">
       <div class="horarios" id="detalle-horarios"></div>
       <div id="detalle-ficha"></div>
       <p class="credito" id="detalle-credito" hidden></p>
